@@ -2,6 +2,11 @@ import { App, Plugin, TAbstractFile, TFile } from "obsidian";
 import { coerceHours, Project, needsStatusWrite, parseProject } from "../models/project";
 import { todayString } from "../util/dates";
 
+export type ActivateResult =
+	| { ok: true; project: Project }
+	| { ok: false; reason: "at-cap"; activeNames: string[] }
+	| { ok: false; reason: "not-found" };
+
 // Indexes Markdown notes in the configured projects folder into Project
 // objects, keeping them live via vault/metadata events. Notes are the only
 // source of truth — this class holds no data that isn't derived from disk.
@@ -12,6 +17,11 @@ export class ProjectStore {
 	// the same card read-modify-write in sequence instead of racing and
 	// dropping one of the increments.
 	private writeQueues = new Map<string, Promise<unknown>>();
+	// Activate/park/delete share one global queue, not the per-file queue
+	// above: enforcing the WIP cap requires checking the active count across
+	// ALL files atomically, so two simultaneous activations (of two different
+	// projects) must not both read the count before either one's write lands.
+	private statusQueue: Promise<unknown> = Promise.resolve();
 
 	constructor(private app: App, private getFolder: () => string) {}
 
@@ -113,6 +123,73 @@ export class ProjectStore {
 			),
 		);
 		return run;
+	}
+
+	private enqueueGlobal<T>(task: () => Promise<T>): Promise<T> {
+		const run = this.statusQueue.then(task, task);
+		this.statusQueue = run.then(
+			() => undefined,
+			() => undefined,
+		);
+		return run;
+	}
+
+	// Promotes a Someday project to Active. Fails without touching the file if
+	// doing so would exceed `limit` — the WIP cap is the entire point of the
+	// plugin, so this never auto-demotes another project to make room.
+	async activate(path: string, limit: number): Promise<ActivateResult> {
+		return this.enqueueGlobal(async () => {
+			const project = this.projects.get(path);
+			if (!project) return { ok: false, reason: "not-found" };
+			if (project.status === "active") return { ok: true, project };
+
+			if (this.getActive().length >= limit) {
+				return {
+					ok: false,
+					reason: "at-cap",
+					activeNames: this.getActive()
+						.map((p) => p.name)
+						.sort((a, b) => a.localeCompare(b)),
+				};
+			}
+
+			await this.app.fileManager.processFrontMatter(project.file, (fm) => {
+				fm.status = "active";
+			});
+			await this.indexFile(project.file, { silent: true });
+			const updated = this.projects.get(path);
+			this.notify(path);
+			return updated ? { ok: true, project: updated } : { ok: false, reason: "not-found" };
+		});
+	}
+
+	// Demoting is always allowed and touches only `status` — hours, touched,
+	// and next survive untouched so re-activating restores full context.
+	async park(path: string): Promise<Project | null> {
+		return this.enqueueGlobal(async () => {
+			const project = this.projects.get(path);
+			if (!project) return null;
+			if (project.status === "someday") return project;
+
+			await this.app.fileManager.processFrontMatter(project.file, (fm) => {
+				fm.status = "someday";
+			});
+			await this.indexFile(project.file, { silent: true });
+			const updated = this.projects.get(path) ?? null;
+			this.notify(path);
+			return updated;
+		});
+	}
+
+	// Uses the vault trash (never a hard delete) so the user's trash
+	// preference is respected. The vault "delete" event removes it from the
+	// in-memory index and notifies listeners once Obsidian confirms it.
+	async deleteProject(path: string): Promise<void> {
+		return this.enqueueGlobal(async () => {
+			const project = this.projects.get(path);
+			if (!project) return;
+			await this.app.fileManager.trashFile(project.file);
+		});
 	}
 
 	private handleCreate(file: TAbstractFile): void {

@@ -55,14 +55,55 @@
 	padding: var(--size-4-3);
 }
 
+.chicago-card.chicago-dragging {
+	opacity: 0.5;
+}
+
+.chicago-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+}
+
+.chicago-card-controls {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	flex-shrink: 0;
+}
+
 .chicago-card-name {
 	font-weight: var(--font-semibold);
 	color: var(--text-normal);
 	text-decoration: none;
+	overflow-wrap: anywhere;
 }
 
 .chicago-card-name:hover {
 	color: var(--interactive-accent);
+}
+
+.chicago-action-button,
+.chicago-menu-button {
+	background: transparent;
+	color: var(--text-muted);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	padding: var(--size-4-1) var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.chicago-action-button:hover,
+.chicago-menu-button:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.chicago-menu-button {
+	padding: var(--size-4-1) var(--size-4-1);
 }
 
 .chicago-card-meta {
@@ -121,4 +162,17 @@
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 	margin-bottom: var(--size-4-2);
+}
+
+.chicago-column.chicago-drop-target {
+	outline: 2px dashed var(--interactive-accent);
+	outline-offset: -2px;
+	border-radius: var(--radius-m);
+}
+
+.chicago-confirm-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--size-4-2);
+	margin-top: var(--size-4-4);
 }
