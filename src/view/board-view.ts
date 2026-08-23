@@ -3,7 +3,7 @@ import { ProjectStore } from "../data/project-store";
 import { InboxStore, InboxLine } from "../data/inbox-store";
 import { ChicagoSettings } from "../settings";
 import { Project, ProjectStatus } from "../models/project";
-import { formatRelative } from "../util/dates";
+import { computeStaleness, formatRelative } from "../util/dates";
 import { ConfirmModal } from "./confirm-modal";
 
 // Custom drag data type carrying a project's vault path between cards and
@@ -183,6 +183,9 @@ export class ChicagoBoardView extends ItemView {
 		const card = createDiv({ cls: "chicago-card chicago-card-active" });
 		card.setAttr("draggable", "true");
 
+		const staleness = computeStaleness(project.touched, settings.staleWarningDays, settings.staleStaleDays);
+		if (staleness !== "normal") card.addClass(`chicago-stale-${staleness}`);
+
 		const head = card.createDiv({ cls: "chicago-card-head" });
 		const nameEl = head.createEl("a", { cls: "chicago-card-name", text: project.name, href: "#" });
 		nameEl.addEventListener("click", (evt) => {
@@ -201,6 +204,9 @@ export class ChicagoBoardView extends ItemView {
 		meta.createSpan({ text: `${formatHours(project.hours)}h` });
 		meta.createSpan({ text: " · " });
 		meta.createSpan({ text: formatRelative(project.touched) });
+		if (staleness !== "normal") {
+			meta.createSpan({ cls: "chicago-staleness-icon", text: " ⚠" });
+		}
 
 		const next = card.createDiv({ cls: "chicago-card-next" });
 		this.renderNextDisplay(next, project);

@@ -27,6 +27,21 @@ export function formatRelative(dateStr: string | null): string {
 	return `${days} days ago`;
 }
 
+export type Staleness = "normal" | "warning" | "stale";
+
+// Derived from `touched` only, for active cards, per SPEC §5.6. "Never
+// touched" counts as stale — an active project with no work logged is
+// exactly the case this signal exists to surface.
+export function computeStaleness(touched: string | null, warningDays: number, staleDays: number): Staleness {
+	const date = touched ? parseDate(touched) : null;
+	if (!date) return "stale";
+
+	const days = daysSince(date);
+	if (days >= staleDays) return "stale";
+	if (days >= warningDays) return "warning";
+	return "normal";
+}
+
 // Local calendar date, not UTC — frontmatter dates are compared at day
 // granularity against the user's own clock, so a UTC stamp would drift the
 // "touched" date by a day near midnight in most timezones.
