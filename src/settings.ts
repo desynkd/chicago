@@ -33,21 +33,23 @@ export function normalizeSettings(raw: unknown): ChicagoSettings {
 	};
 }
 
-function nonEmptyString(value: unknown, fallback: string): string {
+// Exported so the settings tab can validate a single field the same way on
+// every keystroke, using the exact same rules load-time validation applies.
+export function nonEmptyString(value: unknown, fallback: string): string {
 	return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
-function positiveInt(value: unknown, fallback: number): number {
+export function positiveInt(value: unknown, fallback: number): number {
 	const n = Number(value);
 	return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
 }
 
-function nonNegativeInt(value: unknown, fallback: number): number {
+export function nonNegativeInt(value: unknown, fallback: number): number {
 	const n = Number(value);
 	return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
 }
 
-function positiveNumberList(value: unknown, fallback: number[]): number[] {
+export function positiveNumberList(value: unknown, fallback: number[]): number[] {
 	if (!Array.isArray(value)) return fallback;
 	const nums = value.filter((v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0);
 	return nums.length ? nums : fallback;

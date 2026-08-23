@@ -61,6 +61,13 @@ export class ChicagoBoardView extends ItemView {
 		this.unsubscribeInbox = null;
 	}
 
+	// Called by the settings tab after a setting that affects rendering
+	// (WIP limit, hour increments, staleness thresholds) changes — those
+	// aren't project or inbox data, so no store event fires on their own.
+	refresh(): void {
+		this.render();
+	}
+
 	// A change to exactly one already-rendered project, with no change to the
 	// things that would move or resort its card, can be patched in place.
 	// Anything else (new/deleted file, status/category/name change, or a
