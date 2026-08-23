@@ -1,11 +1,13 @@
 import { Plugin } from "obsidian";
 import { ChicagoSettings, DEFAULT_SETTINGS, normalizeSettings } from "./src/settings";
 import { ProjectStore } from "./src/data/project-store";
+import { InboxStore } from "./src/data/inbox-store";
 import { ChicagoBoardView, VIEW_TYPE_CHICAGO_BOARD } from "./src/view/board-view";
 
 export default class ChicagoPlugin extends Plugin {
 	settings: ChicagoSettings = DEFAULT_SETTINGS;
 	projectStore!: ProjectStore;
+	inboxStore!: InboxStore;
 
 	async onload() {
 		console.log("Chicago: loading plugin");
@@ -14,9 +16,16 @@ export default class ChicagoPlugin extends Plugin {
 		this.projectStore = new ProjectStore(this.app, () => this.settings.projectsFolder);
 		this.projectStore.registerEvents(this);
 
+		this.inboxStore = new InboxStore(
+			this.app,
+			() => this.settings.inboxPath,
+			() => this.settings.projectsFolder,
+		);
+		this.inboxStore.registerEvents(this);
+
 		this.registerView(
 			VIEW_TYPE_CHICAGO_BOARD,
-			(leaf) => new ChicagoBoardView(leaf, this.projectStore, () => this.settings),
+			(leaf) => new ChicagoBoardView(leaf, this.projectStore, this.inboxStore, () => this.settings),
 		);
 
 		this.addRibbonIcon("layout-dashboard", "Open Chicago dashboard", () => {
@@ -33,6 +42,7 @@ export default class ChicagoPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(async () => {
 			await this.projectStore.scan();
+			await this.inboxStore.scan();
 			const active = this.projectStore.getActive().length;
 			const someday = this.projectStore.getSomeday().length;
 			console.log(`Chicago: indexed ${active + someday} projects (${active} active, ${someday} someday)`);

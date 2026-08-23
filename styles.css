@@ -2,8 +2,14 @@
 
 .chicago-board {
 	display: flex;
-	gap: var(--size-4-8);
+	flex-direction: column;
+	gap: var(--size-4-4);
 	padding: var(--size-4-4);
+}
+
+.chicago-board-columns {
+	display: flex;
+	gap: var(--size-4-8);
 	align-items: flex-start;
 }
 
@@ -198,4 +204,46 @@
 	justify-content: flex-end;
 	gap: var(--size-4-2);
 	margin-top: var(--size-4-4);
+}
+
+.chicago-inbox-panel {
+	background: var(--background-secondary);
+	border-radius: var(--radius-m);
+	padding: var(--size-4-2) var(--size-4-3);
+}
+
+.chicago-inbox-summary {
+	cursor: pointer;
+	font-weight: var(--font-semibold);
+	color: var(--text-normal);
+}
+
+.chicago-inbox-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+	margin-top: var(--size-4-2);
+}
+
+.chicago-inbox-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	padding: var(--size-4-1) 0;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.chicago-inbox-row:first-child {
+	border-top: none;
+}
+
+.chicago-inbox-text {
+	overflow-wrap: anywhere;
+}
+
+.chicago-inbox-actions {
+	display: flex;
+	gap: var(--size-4-1);
+	flex-shrink: 0;
 }

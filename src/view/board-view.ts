@@ -1,5 +1,6 @@
 import { ItemView, Menu, Notice, WorkspaceLeaf } from "obsidian";
 import { ProjectStore } from "../data/project-store";
+import { InboxStore, InboxLine } from "../data/inbox-store";
 import { ChicagoSettings } from "../settings";
 import { Project, ProjectStatus } from "../models/project";
 import { formatRelative } from "../util/dates";
@@ -20,6 +21,7 @@ interface CardMeta {
 
 export class ChicagoBoardView extends ItemView {
 	private unsubscribe: (() => void) | null = null;
+	private unsubscribeInbox: (() => void) | null = null;
 	// Tracks the rendered card for each project path so a change to a single
 	// project can patch just that card instead of rebuilding the whole board
 	// (full rebuild causes flicker and loses scroll position — see SPEC §5.2).
@@ -28,6 +30,7 @@ export class ChicagoBoardView extends ItemView {
 	constructor(
 		leaf: WorkspaceLeaf,
 		private store: ProjectStore,
+		private inbox: InboxStore,
 		private getSettings: () => ChicagoSettings,
 	) {
 		super(leaf);
@@ -47,12 +50,15 @@ export class ChicagoBoardView extends ItemView {
 
 	async onOpen(): Promise<void> {
 		this.unsubscribe = this.store.onChange((path) => this.handleStoreChange(path));
+		this.unsubscribeInbox = this.inbox.onChange(() => this.render());
 		this.render();
 	}
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
 		this.unsubscribe = null;
+		this.unsubscribeInbox?.();
+		this.unsubscribeInbox = null;
 	}
 
 	// A change to exactly one already-rendered project, with no change to the
@@ -90,12 +96,56 @@ export class ChicagoBoardView extends ItemView {
 		container.addClass("chicago-board");
 		this.cardMeta.clear();
 
+		const inboxLines = this.inbox.getLines();
+		if (inboxLines.length > 0) {
+			container.appendChild(this.renderInboxPanel(inboxLines));
+		}
+
 		const settings = this.getSettings();
 		const active = [...this.store.getActive()].sort((a, b) => a.name.localeCompare(b.name));
 		const someday = this.store.getSomeday();
 
-		container.appendChild(this.renderActiveColumn(active, settings));
-		container.appendChild(this.renderSomedayColumn(someday));
+		const columns = container.createDiv({ cls: "chicago-board-columns" });
+		columns.appendChild(this.renderActiveColumn(active, settings));
+		columns.appendChild(this.renderSomedayColumn(someday));
+	}
+
+	// The panel hides itself when the inbox is empty, per SPEC §5.7 — render()
+	// simply skips calling this when there are no lines.
+	private renderInboxPanel(lines: InboxLine[]): HTMLElement {
+		const details = createEl("details", { cls: "chicago-inbox-panel", attr: { open: "" } });
+		details.createEl("summary", { cls: "chicago-inbox-summary", text: `Inbox (${lines.length})` });
+
+		const list = details.createDiv({ cls: "chicago-inbox-list" });
+		for (const line of lines) {
+			list.appendChild(this.renderInboxRow(line));
+		}
+		return details;
+	}
+
+	private renderInboxRow(line: InboxLine): HTMLElement {
+		const row = createDiv({ cls: "chicago-inbox-row" });
+		row.createSpan({ cls: "chicago-inbox-text", text: line.text });
+
+		const actions = row.createDiv({ cls: "chicago-inbox-actions" });
+		const promoteBtn = actions.createEl("button", { cls: "chicago-action-button", text: "Promote" });
+		promoteBtn.addEventListener("click", () => void this.promoteInboxLine(line));
+		const discardBtn = actions.createEl("button", { cls: "chicago-action-button", text: "Discard" });
+		discardBtn.addEventListener("click", () => void this.discardInboxLine(line));
+
+		return row;
+	}
+
+	private async promoteInboxLine(line: InboxLine): Promise<void> {
+		const result = await this.inbox.promote(line);
+		if (!result.ok) {
+			new Notice("Created the project, but that inbox line had already changed and could not be removed.", 6000);
+		}
+	}
+
+	private async discardInboxLine(line: InboxLine): Promise<void> {
+		const removed = await this.inbox.discard(line);
+		if (!removed) new Notice("That line is no longer in the inbox.", 4000);
 	}
 
 	private renderActiveColumn(active: Project[], settings: ChicagoSettings): HTMLElement {
