@@ -120,6 +120,29 @@
 .chicago-next-placeholder {
 	color: var(--text-faint);
 	font-style: italic;
+	cursor: pointer;
+	border-radius: var(--radius-s);
+}
+
+.chicago-next-text {
+	cursor: pointer;
+	border-radius: var(--radius-s);
+}
+
+.chicago-next-placeholder:hover,
+.chicago-next-text:hover {
+	background: var(--background-modifier-hover);
+}
+
+.chicago-next-input {
+	width: 100%;
+	font-size: var(--font-ui-small);
+	font-family: inherit;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	border: 1px solid var(--interactive-accent);
+	border-radius: var(--radius-s);
+	padding: var(--size-4-1) var(--size-4-2);
 }
 
 .chicago-hour-buttons {

@@ -112,6 +112,23 @@ export class ProjectStore {
 		});
 	}
 
+	// Sets the one-line next action. Single-file, no cross-file invariant to
+	// protect, so this uses the per-file queue rather than the global one.
+	async setNext(path: string, value: string): Promise<Project | null> {
+		return this.enqueue(path, async () => {
+			const project = this.projects.get(path);
+			if (!project) return null;
+
+			await this.app.fileManager.processFrontMatter(project.file, (fm) => {
+				fm.next = value;
+			});
+			await this.indexFile(project.file, { silent: true });
+			const updated = this.projects.get(path) ?? null;
+			this.notify(path);
+			return updated;
+		});
+	}
+
 	private enqueue<T>(path: string, task: () => Promise<T>): Promise<T> {
 		const prior = this.writeQueues.get(path) ?? Promise.resolve();
 		const run = prior.then(task, task);

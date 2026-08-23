@@ -146,11 +146,7 @@ export class ChicagoBoardView extends ItemView {
 		meta.createSpan({ text: formatRelative(project.touched) });
 
 		const next = card.createDiv({ cls: "chicago-card-next" });
-		if (project.next) {
-			next.createSpan({ text: `▸ next: ${project.next}` });
-		} else {
-			next.createSpan({ cls: "chicago-next-placeholder", text: "▸ next: (set one)" });
-		}
+		this.renderNextDisplay(next, project);
 
 		const buttons = card.createDiv({ cls: "chicago-hour-buttons" });
 		for (const increment of settings.hourIncrements) {
@@ -179,6 +175,66 @@ export class ChicagoBoardView extends ItemView {
 			});
 		});
 		const notice = new Notice(message, 8000);
+	}
+
+	// Displays the next action as a clickable line (a placeholder when empty,
+	// per SPEC §4's "make its absence obvious"). Clicking or activating it via
+	// keyboard swaps in an inline input — no modal, single line only.
+	private renderNextDisplay(container: HTMLElement, project: Project): void {
+		container.empty();
+		const trigger = container.createEl("span", {
+			cls: project.next ? "chicago-next-text" : "chicago-next-placeholder",
+			text: project.next ? `▸ next: ${project.next}` : "▸ next: (set one)",
+		});
+		trigger.tabIndex = 0;
+		trigger.setAttr("role", "button");
+		trigger.addEventListener("click", () => this.renderNextEditor(container, project));
+		trigger.addEventListener("keydown", (evt) => {
+			if (evt.key === "Enter" || evt.key === " ") {
+				evt.preventDefault();
+				this.renderNextEditor(container, project);
+			}
+		});
+	}
+
+	private renderNextEditor(container: HTMLElement, project: Project): void {
+		container.empty();
+		const input = container.createEl("input", {
+			cls: "chicago-next-input",
+			type: "text",
+			value: project.next,
+			attr: { placeholder: "next action" },
+		});
+		input.focus();
+		input.select();
+
+		let settled = false;
+		const commit = async (): Promise<void> => {
+			if (settled) return;
+			settled = true;
+			const value = input.value.trim();
+			if (value === project.next) {
+				this.renderNextDisplay(container, project);
+				return;
+			}
+			await this.store.setNext(project.path, value);
+		};
+		const cancel = (): void => {
+			if (settled) return;
+			settled = true;
+			this.renderNextDisplay(container, project);
+		};
+
+		input.addEventListener("keydown", (evt) => {
+			if (evt.key === "Enter") {
+				evt.preventDefault();
+				void commit();
+			} else if (evt.key === "Escape") {
+				evt.preventDefault();
+				cancel();
+			}
+		});
+		input.addEventListener("blur", () => void commit());
 	}
 
 	private renderSomedayColumn(someday: Project[]): HTMLElement {
