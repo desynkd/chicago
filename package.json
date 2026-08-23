@@ -1,0 +1,19 @@
+{
+	"name": "chicago",
+	"version": "0.1.0",
+	"description": "A minimalist project dashboard with a hard-enforced WIP limit, one-click hour logging, and inbox triage.",
+	"main": "main.js",
+	"scripts": {
+		"dev": "node esbuild.config.mjs dev",
+		"build": "tsc --noEmit && node esbuild.config.mjs production"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^20.14.0",
+		"esbuild": "^0.23.0",
+		"obsidian": "latest",
+		"typescript": "^5.5.0"
+	}
+}
