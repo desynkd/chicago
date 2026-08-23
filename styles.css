@@ -1,1 +1,98 @@
-/* Chicago styles — populated in M8 (staleness states, theme polish). */
+/* Chicago styles — staleness states and a full polish pass land in M8. */
+
+.chicago-board {
+	display: flex;
+	gap: var(--size-4-8);
+	padding: var(--size-4-4);
+	align-items: flex-start;
+}
+
+.chicago-column {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.chicago-column-header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding-bottom: var(--size-4-2);
+	margin-bottom: var(--size-4-3);
+}
+
+.chicago-column-title {
+	font-weight: var(--font-bold);
+	font-size: var(--font-ui-large);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.chicago-column-count {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.chicago-column-count.chicago-over-limit {
+	color: var(--text-error);
+	font-weight: var(--font-bold);
+}
+
+.chicago-empty-state {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.chicago-card-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+}
+
+.chicago-card {
+	background: var(--background-secondary);
+	border-radius: var(--radius-m);
+	padding: var(--size-4-3);
+}
+
+.chicago-card-name {
+	font-weight: var(--font-semibold);
+	color: var(--text-normal);
+	text-decoration: none;
+}
+
+.chicago-card-name:hover {
+	color: var(--interactive-accent);
+}
+
+.chicago-card-meta {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	margin-top: var(--size-4-1);
+}
+
+.chicago-card-next {
+	margin-top: var(--size-4-2);
+	font-size: var(--font-ui-small);
+}
+
+.chicago-next-placeholder {
+	color: var(--text-faint);
+	font-style: italic;
+}
+
+.chicago-card-someday {
+	padding: var(--size-4-2) var(--size-4-3);
+}
+
+.chicago-category-group {
+	margin-bottom: var(--size-4-4);
+}
+
+.chicago-category-header {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	margin-bottom: var(--size-4-2);
+}

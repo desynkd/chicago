@@ -1,6 +1,7 @@
 import { Plugin } from "obsidian";
 import { ChicagoSettings, DEFAULT_SETTINGS, normalizeSettings } from "./src/settings";
 import { ProjectStore } from "./src/data/project-store";
+import { ChicagoBoardView, VIEW_TYPE_CHICAGO_BOARD } from "./src/view/board-view";
 
 export default class ChicagoPlugin extends Plugin {
 	settings: ChicagoSettings = DEFAULT_SETTINGS;
@@ -13,15 +14,52 @@ export default class ChicagoPlugin extends Plugin {
 		this.projectStore = new ProjectStore(this.app, () => this.settings.projectsFolder);
 		this.projectStore.registerEvents(this);
 
+		this.registerView(
+			VIEW_TYPE_CHICAGO_BOARD,
+			(leaf) => new ChicagoBoardView(leaf, this.projectStore, () => this.settings),
+		);
+
+		this.addRibbonIcon("layout-dashboard", "Open Chicago dashboard", () => {
+			void this.activateView();
+		});
+
+		this.addCommand({
+			id: "open-dashboard",
+			name: "Open dashboard",
+			callback: () => {
+				void this.activateView();
+			},
+		});
+
 		this.app.workspace.onLayoutReady(async () => {
 			await this.projectStore.scan();
 			const active = this.projectStore.getActive().length;
 			const someday = this.projectStore.getSomeday().length;
 			console.log(`Chicago: indexed ${active + someday} projects (${active} active, ${someday} someday)`);
+
+			if (this.settings.openOnStartup) {
+				await this.activateView();
+			}
 		});
 	}
 
 	onunload() {
 		console.log("Chicago: unloading plugin");
+	}
+
+	// Reuses an existing dashboard leaf rather than opening duplicates; opens
+	// in the main workspace area per §5.1, never the sidebar.
+	async activateView(): Promise<void> {
+		const { workspace } = this.app;
+		const existing = workspace.getLeavesOfType(VIEW_TYPE_CHICAGO_BOARD);
+
+		if (existing.length > 0) {
+			workspace.revealLeaf(existing[0]);
+			return;
+		}
+
+		const leaf = workspace.getLeaf("tab");
+		await leaf.setViewState({ type: VIEW_TYPE_CHICAGO_BOARD, active: true });
+		workspace.revealLeaf(leaf);
 	}
 }
