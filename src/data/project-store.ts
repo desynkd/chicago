@@ -1,16 +1,23 @@
 import { App, Plugin, TAbstractFile, TFile } from "obsidian";
-import { Project, needsStatusWrite, parseProject } from "../models/project";
+import { coerceHours, Project, needsStatusWrite, parseProject } from "../models/project";
+import { todayString } from "../util/dates";
 
 // Indexes Markdown notes in the configured projects folder into Project
 // objects, keeping them live via vault/metadata events. Notes are the only
 // source of truth — this class holds no data that isn't derived from disk.
 export class ProjectStore {
 	private projects = new Map<string, Project>();
-	private listeners = new Set<() => void>();
+	private listeners = new Set<(path?: string) => void>();
+	// Serialises frontmatter writes per file so two rapid hour-log clicks on
+	// the same card read-modify-write in sequence instead of racing and
+	// dropping one of the increments.
+	private writeQueues = new Map<string, Promise<unknown>>();
 
 	constructor(private app: App, private getFolder: () => string) {}
 
-	onChange(callback: () => void): () => void {
+	// `path` is set when exactly one project changed (so a view can patch just
+	// that card) and omitted for broader refreshes (initial scan, rename).
+	onChange(callback: (path?: string) => void): () => void {
 		this.listeners.add(callback);
 		return () => this.listeners.delete(callback);
 	}
@@ -71,7 +78,41 @@ export class ProjectStore {
 		}
 
 		this.projects.set(file.path, project);
-		if (!opts.silent) this.notify();
+		if (!opts.silent) this.notify(file.path);
+	}
+
+	// Adds `delta` hours (clamped at 0) and stamps `touched` to today, in one
+	// atomic read-modify-write per file. Returns the updated project, or null
+	// if the file is no longer tracked (deleted/moved out from under the click).
+	async logHours(path: string, delta: number): Promise<Project | null> {
+		return this.enqueue(path, async () => {
+			const file = this.app.vault.getAbstractFileByPath(path);
+			if (!(file instanceof TFile) || !this.projects.has(path)) return null;
+
+			await this.app.fileManager.processFrontMatter(file, (fm) => {
+				const next = coerceHours(fm.hours) + delta;
+				fm.hours = next < 0 ? 0 : Math.round(next * 100) / 100;
+				fm.touched = todayString();
+			});
+
+			await this.indexFile(file, { silent: true });
+			const project = this.projects.get(path) ?? null;
+			this.notify(path);
+			return project;
+		});
+	}
+
+	private enqueue<T>(path: string, task: () => Promise<T>): Promise<T> {
+		const prior = this.writeQueues.get(path) ?? Promise.resolve();
+		const run = prior.then(task, task);
+		this.writeQueues.set(
+			path,
+			run.then(
+				() => undefined,
+				() => undefined,
+			),
+		);
+		return run;
 	}
 
 	private handleCreate(file: TAbstractFile): void {
@@ -98,7 +139,7 @@ export class ProjectStore {
 		void this.indexFile(file);
 	}
 
-	private notify(): void {
-		for (const callback of this.listeners) callback();
+	private notify(path?: string): void {
+		for (const callback of this.listeners) callback(path);
 	}
 }

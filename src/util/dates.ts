@@ -26,3 +26,14 @@ export function formatRelative(dateStr: string | null): string {
 	if (days === 1) return "yesterday";
 	return `${days} days ago`;
 }
+
+// Local calendar date, not UTC — frontmatter dates are compared at day
+// granularity against the user's own clock, so a UTC stamp would drift the
+// "touched" date by a day near midnight in most timezones.
+export function todayString(): string {
+	const now = new Date();
+	const y = now.getFullYear();
+	const m = String(now.getMonth() + 1).padStart(2, "0");
+	const d = String(now.getDate()).padStart(2, "0");
+	return `${y}-${m}-${d}`;
+}

@@ -40,7 +40,7 @@ function coerceStatus(value: unknown): ProjectStatus {
 	return value === "active" ? "active" : "someday";
 }
 
-function coerceHours(value: unknown): number {
+export function coerceHours(value: unknown): number {
 	const n = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
 	if (!Number.isFinite(n)) return 0;
 	return n < 0 ? 0 : n;

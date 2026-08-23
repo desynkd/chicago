@@ -81,6 +81,32 @@
 	font-style: italic;
 }
 
+.chicago-hour-buttons {
+	display: flex;
+	gap: var(--size-4-2);
+	margin-top: var(--size-4-3);
+}
+
+.chicago-hour-button {
+	flex: 1 1 0;
+	background: var(--interactive-normal);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	padding: var(--size-4-1) var(--size-4-2);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+}
+
+.chicago-hour-button:hover {
+	background: var(--interactive-hover);
+}
+
+.chicago-undo-link {
+	color: var(--text-accent);
+	text-decoration: underline;
+}
+
 .chicago-card-someday {
 	padding: var(--size-4-2) var(--size-4-3);
 }
