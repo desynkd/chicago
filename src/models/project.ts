@@ -14,9 +14,13 @@ export interface Project {
 	created: string | null;
 }
 
-type FrontMatter = Record<string, unknown> | undefined;
+// Frontmatter as the metadata cache and processFrontMatter hand it over.
+// The Obsidian API types the processFrontMatter callback parameter as `any`,
+// which turns off type checking on every field a caller touches — writers
+// annotate this instead, so a typo in a field name is still an error.
+export type FrontMatter = Record<string, unknown>;
 
-export function parseProject(file: TFile, frontmatter: FrontMatter): Project {
+export function parseProject(file: TFile, frontmatter: FrontMatter | undefined): Project {
 	return {
 		file,
 		path: file.path,
@@ -32,7 +36,7 @@ export function parseProject(file: TFile, frontmatter: FrontMatter): Project {
 
 // True when the note's frontmatter has no valid status yet — the caller
 // should stamp `status: someday` on it so no project stays invisible.
-export function needsStatusWrite(frontmatter: FrontMatter): boolean {
+export function needsStatusWrite(frontmatter: FrontMatter | undefined): boolean {
 	return frontmatter?.status !== "active" && frontmatter?.status !== "someday";
 }
 

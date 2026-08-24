@@ -1,5 +1,5 @@
 import { App, Plugin, TAbstractFile, TFile } from "obsidian";
-import { coerceHours, Project, needsStatusWrite, parseProject } from "../models/project";
+import { coerceHours, FrontMatter, Project, needsStatusWrite, parseProject } from "../models/project";
 import { todayString } from "../util/dates";
 
 export type ActivateResult =
@@ -78,7 +78,7 @@ export class ProjectStore {
 		let project = parseProject(file, frontmatter);
 
 		if (needsStatusWrite(frontmatter)) {
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: FrontMatter) => {
 				if (fm.status !== "active" && fm.status !== "someday") {
 					fm.status = "someday";
 				}
@@ -99,7 +99,7 @@ export class ProjectStore {
 			const file = this.app.vault.getAbstractFileByPath(path);
 			if (!(file instanceof TFile) || !this.projects.has(path)) return null;
 
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: FrontMatter) => {
 				const next = coerceHours(fm.hours) + delta;
 				fm.hours = next < 0 ? 0 : Math.round(next * 100) / 100;
 				fm.touched = todayString();
@@ -119,7 +119,7 @@ export class ProjectStore {
 			const project = this.projects.get(path);
 			if (!project) return null;
 
-			await this.app.fileManager.processFrontMatter(project.file, (fm) => {
+			await this.app.fileManager.processFrontMatter(project.file, (fm: FrontMatter) => {
 				fm.next = value;
 			});
 			await this.indexFile(project.file, { silent: true });
@@ -170,7 +170,7 @@ export class ProjectStore {
 				};
 			}
 
-			await this.app.fileManager.processFrontMatter(project.file, (fm) => {
+			await this.app.fileManager.processFrontMatter(project.file, (fm: FrontMatter) => {
 				fm.status = "active";
 			});
 			await this.indexFile(project.file, { silent: true });
@@ -188,7 +188,7 @@ export class ProjectStore {
 			if (!project) return null;
 			if (project.status === "someday") return project;
 
-			await this.app.fileManager.processFrontMatter(project.file, (fm) => {
+			await this.app.fileManager.processFrontMatter(project.file, (fm: FrontMatter) => {
 				fm.status = "someday";
 			});
 			await this.indexFile(project.file, { silent: true });

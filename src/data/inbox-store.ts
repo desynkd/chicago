@@ -1,4 +1,5 @@
 import { App, Plugin, TAbstractFile, TFile } from "obsidian";
+import { FrontMatter } from "../models/project";
 import { todayString } from "../util/dates";
 
 export interface InboxLine {
@@ -87,7 +88,7 @@ export class InboxStore {
 		const body = sanitised !== line.text.trim() ? line.text : "";
 
 		const file = await this.app.vault.create(path, body);
-		await this.app.fileManager.processFrontMatter(file, (fm) => {
+		await this.app.fileManager.processFrontMatter(file, (fm: FrontMatter) => {
 			fm.status = "someday";
 			fm.hours = 0;
 			fm.created = todayString();
