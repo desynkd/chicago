@@ -50,11 +50,21 @@ export class ProjectStore {
 
 	async scan(): Promise<void> {
 		this.projects.clear();
-		const files = this.app.vault.getMarkdownFiles().filter((f) => this.isTracked(f));
-		for (const file of files) {
+		for (const file of this.folderNotes()) {
 			await this.indexFile(file, { silent: true });
 		}
 		this.notify();
+	}
+
+	// Reads the configured folder's own children rather than filtering every
+	// Markdown file in the vault. Tracked notes only ever sit one level inside
+	// that folder, so walking the whole vault to find them asks for a great
+	// deal more of it than the plugin has any use for.
+	private folderNotes(): TFile[] {
+		const folder = this.getFolder().trim().replace(/^\/+|\/+$/g, "");
+		const target = folder ? this.app.vault.getFolderByPath(folder) : this.app.vault.getRoot();
+		if (!target) return [];
+		return target.children.filter((f): f is TFile => f instanceof TFile && f.extension === "md");
 	}
 
 	registerEvents(plugin: Plugin): void {
