@@ -305,7 +305,7 @@ export class ChicagoBoardView extends ItemView {
 	// activating it by keyboard swaps in an inline input — no modal, one line.
 	private renderNextDisplay(container: HTMLElement, project: Project): void {
 		container.empty();
-		const trigger = container.createEl("span", {
+		const trigger = container.createSpan({
 			cls: project.next ? "chicago-next-text" : "chicago-next-placeholder",
 			text: project.next ? `▶ next: ${project.next}` : "▶ next: (set one)",
 		});
