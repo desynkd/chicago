@@ -29,7 +29,7 @@ export function formatRelative(dateStr: string | null): string {
 
 export type Staleness = "normal" | "warning" | "stale";
 
-// Derived from `touched` only, for active cards, per SPEC §5.6. "Never
+// Derived from `touched` only, and shown on active cards only. "Never
 // touched" counts as stale — an active project with no work logged is
 // exactly the case this signal exists to surface.
 export function computeStaleness(touched: string | null, warningDays: number, staleDays: number): Staleness {

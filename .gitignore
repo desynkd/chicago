@@ -3,3 +3,6 @@ main.js
 *.js.map
 .env
 data.json
+
+# Internal design spec — kept locally, deliberately not published.
+SPEC.md

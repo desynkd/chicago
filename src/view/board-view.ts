@@ -24,7 +24,7 @@ export class ChicagoBoardView extends ItemView {
 	private unsubscribeInbox: (() => void) | null = null;
 	// Tracks the rendered card for each project path so a change to a single
 	// project can patch just that card instead of rebuilding the whole board
-	// (full rebuild causes flicker and loses scroll position — see SPEC §5.2).
+	// (a full rebuild flickers and loses the scroll position).
 	private cardMeta = new Map<string, CardMeta>();
 
 	constructor(
@@ -144,9 +144,9 @@ export class ChicagoBoardView extends ItemView {
 		return tray;
 	}
 
-	// SPEC §5.7 had this panel disappear when the inbox was empty. It now
-	// shares a row with Suspended, and vanishing would leave that row
-	// lopsided, so it holds its place and says it is clear instead.
+	// This panel used to hide itself when the inbox was empty. It now shares
+	// a row with Suspended, and vanishing would leave that row lopsided, so
+	// it holds its place and says it is clear instead.
 	private renderInboxSection(lines: InboxLine[]): HTMLElement {
 		const section = createDiv({ cls: "chicago-section" });
 		section.createDiv({ cls: "chicago-section-title", text: "Ideas inbox" });
@@ -298,9 +298,10 @@ export class ChicagoBoardView extends ItemView {
 		const notice = new Notice(message, 8000);
 	}
 
-	// Displays the next action as a clickable line (a placeholder when empty,
-	// per SPEC §4's "make its absence obvious"). Clicking or activating it via
-	// keyboard swaps in an inline input — no modal, single line only.
+	// Displays the next action as a clickable line. When empty it renders a
+	// placeholder rather than nothing: this is the field that answers "where
+	// did I leave off", so its absence has to be visible. Clicking or
+	// activating it by keyboard swaps in an inline input — no modal, one line.
 	private renderNextDisplay(container: HTMLElement, project: Project): void {
 		container.empty();
 		const trigger = container.createEl("span", {
@@ -423,8 +424,9 @@ export class ChicagoBoardView extends ItemView {
 	}
 
 	// Drag is an enhancement only — every action it performs (activate/park)
-	// is already reachable via the "⋮" menu above, so nothing here is the
-	// only path to a feature (see SPEC §3, §5.5).
+	// is already reachable from the menu above, so nothing here is the only
+	// path to a feature. That keeps the board usable by keyboard, by screen
+	// reader, and on any platform where dragging is awkward.
 	private attachDrag(card: HTMLElement, path: string): void {
 		card.addEventListener("dragstart", (evt) => {
 			evt.dataTransfer?.setData(DRAG_MIME, path);
@@ -458,7 +460,7 @@ export class ChicagoBoardView extends ItemView {
 }
 
 // Alphabetical by category, with a trailing "Uncategorised" group for
-// projects that have none — matches §5.4 of the spec.
+// projects that have none.
 function groupByCategory(projects: Project[]): Array<[string, Project[]]> {
 	const UNCATEGORISED = "Uncategorised";
 	const groups = new Map<string, Project[]>();

@@ -15,7 +15,8 @@ const LIST_ITEM = /^-\s*(?:\[ \]\s*)?(.*)$/;
 
 // A line counts as an inbox idea when it's a plain "- foo" bullet with
 // non-empty content. A checked task ("- [x] foo") is treated as already
-// handled and skipped, matching the "unchecked" wording in SPEC §5.7.
+// handled and skipped, so a line the user has already ticked off stays
+// out of the panel.
 export function parseInboxLines(content: string): InboxLine[] {
 	const lines: InboxLine[] = [];
 	for (const raw of content.split(/\r?\n/)) {

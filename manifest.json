@@ -4,7 +4,7 @@
 	"version": "0.1.0",
 	"minAppVersion": "1.5.0",
 	"description": "A minimalist project dashboard with a hard-enforced WIP limit, one-click hour logging, and inbox triage — for turning scattered ideas into finished projects.",
-	"author": "",
-	"authorUrl": "",
+	"author": "desynkd",
+	"authorUrl": "https://github.com/desynkd",
 	"isDesktopOnly": false
 }

@@ -1,8 +1,8 @@
 import { App, Modal } from "obsidian";
 
-// A minimal Yes/No modal. Used only for the one confirmation the spec
-// requires (deleting a project with hours logged) — everything else in the
-// hot path must stay a single click with no dialog.
+// A minimal Yes/No modal, used for the single confirmation the board asks
+// for: deleting a project that has hours logged. Everything else in the hot
+// path stays a single click with no dialog.
 export class ConfirmModal extends Modal {
 	private settled = false;
 	private resolveFn: ((value: boolean) => void) | null = null;

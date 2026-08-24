@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Vault target is machine-specific, so it's read from an env var or a
-// gitignored .env file rather than hardcoded — see SPEC.md §3.
+// gitignored .env file rather than hardcoded, so the repo is not tied to
+// one machine.
 function loadDotEnv() {
 	const envPath = path.join(__dirname, ".env");
 	if (!fs.existsSync(envPath)) return;

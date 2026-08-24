@@ -60,8 +60,9 @@ export default class ChicagoPlugin extends Plugin {
 		console.log("Chicago: unloading plugin");
 	}
 
-	// Reuses an existing dashboard leaf rather than opening duplicates; opens
-	// in the main workspace area per §5.1, never the sidebar.
+	// Reuses an existing dashboard leaf rather than opening duplicates, and
+	// opens in the main workspace area rather than the sidebar — the board is
+	// a glance-at-everything surface and needs the width.
 	async activateView(): Promise<void> {
 		const { workspace } = this.app;
 		const existing = workspace.getLeavesOfType(VIEW_TYPE_CHICAGO_BOARD);
