@@ -1,105 +1,122 @@
-/* Chicago styles — staleness states and a full polish pass land in M8. */
+/* Chicago board styles.
+
+   Every colour here resolves to a vault theme token, so the board wears
+   whatever theme the user's vault does. Surfaces are the one thing that
+   can't be taken straight from a token: --background-secondary sits
+   BELOW --background-primary on dark themes, above it on light ones, and
+   some themes make the two identical. So the board's three levels are
+   built by mixing --text-normal into --background-primary, which always
+   moves toward contrast whichever direction that is. Each mix declares a
+   plain-token fallback on the line above for engines without color-mix.
+
+   Geometry and type come from Obsidian's own scales. The one deliberate
+   exception is --chicago-radius-tray, which sits past the top of the
+   radius scale and so is ours rather than the vault's. */
 
 .chicago-board {
 	display: flex;
 	flex-direction: column;
-	gap: var(--size-4-4);
-	padding: var(--size-4-4);
-	/* Lets .chicago-board-columns respond to the pane's own width rather than
-	   the window's — the pane can be narrow in a split even in a wide window. */
+	gap: var(--size-4-6);
+	padding: var(--size-4-6);
 	container-type: inline-size;
 	container-name: chicago-board;
+
+	--chicago-tray: var(--background-secondary);
+	--chicago-tray: color-mix(in srgb, var(--text-normal) 7%, var(--background-primary));
+	--chicago-surface: var(--background-secondary);
+	--chicago-surface: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary));
+	--chicago-hairline: var(--background-modifier-border);
+	--chicago-hairline: color-mix(in srgb, var(--text-normal) 11%, transparent);
+	--chicago-control: var(--interactive-normal);
+	--chicago-control: color-mix(in srgb, var(--text-normal) 10%, var(--background-primary));
+	--chicago-control-hover: var(--interactive-hover);
+	--chicago-control-hover: color-mix(in srgb, var(--text-normal) 17%, var(--background-primary));
+
+	/* Past the top of Obsidian's radius scale, so it is ours rather than
+	   the vault's. Cards and controls stay on the vault's own tokens. */
+	--chicago-radius-tray: 32px;
 }
 
-.chicago-board-columns {
-	display: flex;
-	gap: var(--size-4-8);
-	align-items: flex-start;
+/* One step up the Obsidian radius scale from where this started:
+   trays xl, cards l, controls m. Still tokens, so a theme that
+   redefines the scale carries the board with it. */
+
+/* --- shared tray -------------------------------------------------- */
+.chicago-tray {
+	background: var(--chicago-tray);
+	border: 1px solid var(--chicago-hairline);
+	border-radius: var(--chicago-radius-tray);
+	padding: var(--size-4-4);
 }
 
-/* SPEC §5.1: stack the two columns vertically once the pane is too narrow
-   to hold both comfortably. */
-@container chicago-board (max-width: 640px) {
-	.chicago-board-columns {
-		flex-direction: column;
-	}
+/* --- active ------------------------------------------------------- */
+/* No heading: the tray is the label. Position is the hierarchy. */
+.chicago-active {
+	position: relative;
 }
 
-.chicago-column {
-	flex: 1 1 0;
+.chicago-active-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--size-4-4);
+	align-items: start;
+}
+
+/* Only rendered when the count exceeds the limit — the WIP rule is
+   enforced on the action, so this is a receipt, not a permanent gauge. */
+.chicago-wip-badge {
+	position: absolute;
+	top: -11px;
+	right: var(--size-4-8);
+	z-index: 1;
+	background: var(--background-primary);
+	color: var(--text-error);
+	border: 1px solid var(--text-error);
+	border-radius: 999px;
+	padding: 1px var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-bold);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.02em;
+}
+
+/* --- lower half --------------------------------------------------- */
+.chicago-lower {
+	display: grid;
+	grid-template-columns: 2fr 3fr;
+	gap: var(--size-4-6);
+	align-items: start;
+}
+
+/* Grid items default to min-width:auto, so one long unwrappable row
+   would shove this column past the board's own padding. */
+.chicago-lower > * {
 	min-width: 0;
 }
 
-.chicago-column-header {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	border-bottom: 1px solid var(--background-modifier-border);
-	padding-bottom: var(--size-4-2);
+.chicago-section-title {
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-bold);
+	color: var(--text-normal);
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
 	margin-bottom: var(--size-4-3);
 }
 
-.chicago-column-title {
-	font-weight: var(--font-bold);
-	font-size: var(--font-ui-large);
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
+.chicago-tray > .chicago-section-title {
+	border-bottom: 1px solid var(--chicago-hairline);
+	padding-bottom: var(--size-4-3);
 }
 
-.chicago-column-count {
-	color: var(--text-muted);
-	font-size: var(--font-ui-small);
-}
-
-.chicago-column-count.chicago-over-limit {
-	color: var(--text-error);
-	font-weight: var(--font-bold);
-}
-
-.chicago-empty-state {
-	color: var(--text-muted);
-	font-style: italic;
-}
-
-.chicago-card-list {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-2);
-}
-
+/* --- cards, shared ------------------------------------------------ */
 .chicago-card {
-	background: var(--background-secondary);
-	border-radius: var(--radius-m);
-	padding: var(--size-4-3);
-	border-left: 3px solid transparent;
-	transition: border-color 0.15s ease-out;
+	background: var(--chicago-surface);
+	border: 1px solid var(--chicago-hairline);
+	border-radius: var(--radius-l);
+	transition: border-color 0.15s ease-out, background 0.15s ease-out;
 }
 
-.chicago-card.chicago-dragging {
-	opacity: 0.5;
-}
-
-/* Staleness (SPEC §5.6): noticeable but not alarming — a colour accent and a
-   small marker next to the relative-time text, nothing louder than that. */
-.chicago-card-active.chicago-stale-warning {
-	border-left-color: var(--color-orange);
-}
-
-.chicago-card-active.chicago-stale-stale {
-	border-left-color: var(--color-red);
-}
-
-.chicago-staleness-icon {
-	font-size: var(--font-ui-smaller);
-}
-
-.chicago-stale-warning .chicago-staleness-icon {
-	color: var(--color-orange);
-}
-
-.chicago-stale-stale .chicago-staleness-icon {
-	color: var(--color-red);
-}
+.chicago-card.chicago-dragging { opacity: 0.5; }
 
 .chicago-card-head {
 	display: flex;
@@ -108,78 +125,132 @@
 	gap: var(--size-4-2);
 }
 
+.chicago-card-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	color: var(--text-normal);
+	text-decoration: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.chicago-card-name:hover { color: var(--interactive-accent); }
+
 .chicago-card-controls {
 	display: flex;
 	align-items: center;
-	gap: var(--size-4-1);
+	gap: var(--size-4-2);
 	flex-shrink: 0;
 }
 
-.chicago-card-name {
-	font-weight: var(--font-semibold);
-	color: var(--text-normal);
-	text-decoration: none;
-	overflow-wrap: anywhere;
-}
-
-.chicago-card-name:hover {
-	color: var(--interactive-accent);
-}
-
-.chicago-action-button,
+/* Every verb lives in this menu now — Park / Activate / Delete /
+   Promote / Discard. The card surface carries no verbs but the
+   hour pills, which are the one action worth a single click. */
 .chicago-menu-button {
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
 	background: transparent;
 	color: var(--text-muted);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	padding: var(--size-4-1) var(--size-4-2);
-	font-size: var(--font-ui-smaller);
+	border: none;
+	border-radius: var(--radius-m);
 	cursor: pointer;
-	white-space: nowrap;
 }
 
-.chicago-action-button:hover,
 .chicago-menu-button:hover {
-	background: var(--background-modifier-hover);
+	background: var(--chicago-control);
 	color: var(--text-normal);
 }
 
-.chicago-menu-button {
-	padding: var(--size-4-1) var(--size-4-1);
+.chicago-menu-button:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+.chicago-menu-button svg { width: 18px; height: 18px; }
+
+/* --- active card -------------------------------------------------- */
+.chicago-card-active {
+	display: flex;
+	flex-direction: column;
+	min-height: 184px;
+	padding: var(--size-4-4);
+}
+
+.chicago-card-active .chicago-card-name {
+	font-size: var(--font-ui-large);
+	font-weight: var(--font-bold);
+	letter-spacing: -0.01em;
+}
+
+/* Staleness as a dot rather than a rail: it sits beside the title
+   where the eye already is, and never fights the card's own edge. */
+.chicago-status-dot {
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: var(--chicago-control-hover);
+}
+
+/* Mixed down toward the card surface rather than dropped in opacity:
+   the dot stays fully opaque, so it composites the same whatever sits
+   behind the card. Loud enough to read while you are looking at a card,
+   quiet enough not to pull the eye across the board. */
+.chicago-stale-warning .chicago-status-dot {
+	background: var(--color-yellow, var(--color-orange));
+	background: color-mix(in srgb, var(--color-yellow, var(--color-orange)) 55%, var(--chicago-surface));
+}
+
+.chicago-stale-stale .chicago-status-dot {
+	background: var(--color-red);
+	background: color-mix(in srgb, var(--color-red) 55%, var(--chicago-surface));
 }
 
 .chicago-card-meta {
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
 	margin-top: var(--size-4-1);
+	font-variant-numeric: tabular-nums;
+}
+
+.chicago-card-foot {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: var(--size-4-3);
+	margin-top: auto;
+	padding-top: var(--size-4-4);
 }
 
 .chicago-card-next {
-	margin-top: var(--size-4-2);
+	flex: 1 1 auto;
+	min-width: 0;
 	font-size: var(--font-ui-small);
 }
 
+.chicago-next-text,
 .chicago-next-placeholder {
-	color: var(--text-faint);
-	font-style: italic;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 	cursor: pointer;
 	border-radius: var(--radius-s);
 }
 
-.chicago-next-text {
-	cursor: pointer;
-	border-radius: var(--radius-s);
-}
+.chicago-next-placeholder { color: var(--text-faint); }
 
-.chicago-next-placeholder:hover,
-.chicago-next-text:hover {
-	background: var(--background-modifier-hover);
-}
+.chicago-next-text:hover,
+.chicago-next-placeholder:hover { color: var(--interactive-accent); }
 
-.chicago-next-placeholder:focus-visible,
-.chicago-next-text:focus-visible {
+.chicago-next-text:focus-visible,
+.chicago-next-placeholder:focus-visible {
 	outline: 2px solid var(--interactive-accent);
-	outline-offset: 1px;
+	outline-offset: 2px;
 }
 
 .chicago-next-input {
@@ -189,60 +260,101 @@
 	background: var(--background-primary);
 	color: var(--text-normal);
 	border: 1px solid var(--interactive-accent);
-	border-radius: var(--radius-s);
-	padding: var(--size-4-1) var(--size-4-2);
+	border-radius: var(--radius-m);
+	padding: var(--size-4-2) var(--size-4-3);
 }
 
 .chicago-hour-buttons {
 	display: flex;
 	gap: var(--size-4-2);
-	margin-top: var(--size-4-3);
+	flex-shrink: 0;
 }
 
 .chicago-hour-button {
-	flex: 1 1 0;
-	background: var(--interactive-normal);
+	min-width: 44px;
+	background: var(--chicago-control);
 	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	padding: var(--size-4-1) var(--size-4-2);
-	font-size: var(--font-ui-small);
-	cursor: pointer;
-}
-
-.chicago-hour-button:hover {
-	background: var(--interactive-hover);
-}
-
-.chicago-undo-link {
-	color: var(--text-accent);
-	text-decoration: underline;
-}
-
-.chicago-card-someday {
+	border: none;
+	border-radius: 999px;
 	padding: var(--size-4-2) var(--size-4-3);
+	font-size: var(--font-ui-small);
+	font-variant-numeric: tabular-nums;
+	cursor: pointer;
+	transition: background 0.12s ease-out;
 }
 
-.chicago-card-someday:hover {
-	background: var(--background-secondary-alt, var(--background-secondary));
+.chicago-hour-button:hover { background: var(--chicago-control-hover); }
+.chicago-hour-button:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+
+.chicago-undo-link { color: var(--text-accent); text-decoration: underline; }
+
+/* --- suspended + inbox rows --------------------------------------- */
+.chicago-card-someday,
+.chicago-inbox-row {
+	padding: var(--size-4-3) var(--size-4-3) var(--size-4-3) var(--size-4-4);
 }
 
-.chicago-category-group {
-	margin-bottom: var(--size-4-4);
+.chicago-inbox-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
 }
+
+.chicago-card-someday .chicago-card-name,
+.chicago-inbox-text {
+	font-size: var(--font-ui-medium);
+	color: var(--text-normal);
+}
+
+.chicago-card-someday:hover,
+.chicago-inbox-row:hover { border-color: var(--chicago-control-hover); }
+
+.chicago-card-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+}
+
+.chicago-inbox-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.chicago-category-group { margin-bottom: var(--size-4-4); }
+.chicago-category-group:last-child { margin-bottom: 0; }
 
 .chicago-category-header {
 	color: var(--text-muted);
-	font-size: var(--font-ui-smaller);
+	font-size: var(--font-ui-small);
 	text-transform: uppercase;
-	letter-spacing: 0.04em;
+	letter-spacing: 0.08em;
 	margin-bottom: var(--size-4-2);
 }
 
-.chicago-column.chicago-drop-target {
+/* --- empty states -------------------------------------------------- */
+.chicago-empty-state {
+	display: grid;
+	place-items: center;
+	min-height: 132px;
+	padding: var(--size-4-4);
+	text-align: center;
+	font-size: var(--font-ui-large);
+	font-weight: var(--font-bold);
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: var(--text-normal);
+	opacity: 0.28;
+}
+
+/* --- drag ---------------------------------------------------------- */
+.chicago-drop-target {
 	outline: 2px dashed var(--interactive-accent);
 	outline-offset: -2px;
-	border-radius: var(--radius-m);
+	border-radius: var(--chicago-radius-tray);
 }
 
 .chicago-confirm-buttons {
@@ -252,44 +364,16 @@
 	margin-top: var(--size-4-4);
 }
 
-.chicago-inbox-panel {
-	background: var(--background-secondary);
-	border-radius: var(--radius-m);
-	padding: var(--size-4-2) var(--size-4-3);
+/* --- responsive ----------------------------------------------------- */
+/* Two breakpoints, both on the pane's own width: active cards need
+   more room than the single-line rows underneath, so they collapse
+   to one column first. */
+@container chicago-board (max-width: 820px) {
+	.chicago-active-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
-.chicago-inbox-summary {
-	cursor: pointer;
-	font-weight: var(--font-semibold);
-	color: var(--text-normal);
-}
-
-.chicago-inbox-list {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-1);
-	margin-top: var(--size-4-2);
-}
-
-.chicago-inbox-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--size-4-2);
-	padding: var(--size-4-1) 0;
-	border-top: 1px solid var(--background-modifier-border);
-}
-
-.chicago-inbox-row:first-child {
-	border-top: none;
-}
-
-.chicago-inbox-text {
-	overflow-wrap: anywhere;
-}
-
-.chicago-inbox-actions {
-	display: flex;
-	gap: var(--size-4-1);
-	flex-shrink: 0;
+@container chicago-board (max-width: 640px) {
+	.chicago-lower { grid-template-columns: minmax(0, 1fr); }
+	.chicago-card-foot { flex-direction: column; align-items: stretch; gap: var(--size-4-3); }
+	.chicago-hour-button { flex: 1 1 0; }
 }

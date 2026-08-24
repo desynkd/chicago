@@ -1,9 +1,9 @@
-import { ItemView, Menu, Notice, WorkspaceLeaf } from "obsidian";
+import { ItemView, Menu, Notice, WorkspaceLeaf, setIcon } from "obsidian";
 import { ProjectStore } from "../data/project-store";
 import { InboxStore, InboxLine } from "../data/inbox-store";
 import { ChicagoSettings } from "../settings";
 import { Project, ProjectStatus } from "../models/project";
-import { computeStaleness, formatRelative } from "../util/dates";
+import { computeStaleness, formatRelative, Staleness } from "../util/dates";
 import { ConfirmModal } from "./confirm-modal";
 
 // Custom drag data type carrying a project's vault path between cards and
@@ -97,50 +97,86 @@ export class ChicagoBoardView extends ItemView {
 		prev.el.replaceWith(replacement);
 	}
 
+	// Active on top in a tray of its own, then Ideas inbox and Suspended
+	// side by side beneath it. Active carries no heading: its position and
+	// its enclosure are what identify it.
 	private render(): void {
 		const container = this.contentEl;
 		container.empty();
 		container.addClass("chicago-board");
 		this.cardMeta.clear();
 
-		const inboxLines = this.inbox.getLines();
-		if (inboxLines.length > 0) {
-			container.appendChild(this.renderInboxPanel(inboxLines));
-		}
-
 		const settings = this.getSettings();
 		const active = [...this.store.getActive()].sort((a, b) => a.name.localeCompare(b.name));
 		const someday = this.store.getSomeday();
 
-		const columns = container.createDiv({ cls: "chicago-board-columns" });
-		columns.appendChild(this.renderActiveColumn(active, settings));
-		columns.appendChild(this.renderSomedayColumn(someday));
+		container.appendChild(this.renderActive(active, settings));
+
+		const lower = container.createDiv({ cls: "chicago-lower" });
+		lower.appendChild(this.renderInboxSection(this.inbox.getLines()));
+		lower.appendChild(this.renderSuspended(someday));
 	}
 
-	// The panel hides itself when the inbox is empty, per SPEC §5.7 — render()
-	// simply skips calling this when there are no lines.
-	private renderInboxPanel(lines: InboxLine[]): HTMLElement {
-		const details = createEl("details", { cls: "chicago-inbox-panel", attr: { open: "" } });
-		details.createEl("summary", { cls: "chicago-inbox-summary", text: `Inbox (${lines.length})` });
+	private renderActive(active: Project[], settings: ChicagoSettings): HTMLElement {
+		const tray = createDiv({ cls: "chicago-active chicago-tray" });
 
-		const list = details.createDiv({ cls: "chicago-inbox-list" });
+		// The WIP rule is enforced on the action — activate() refuses past the
+		// cap — so a permanent gauge would only ever read "n of n". A count is
+		// worth showing exactly when the board is already over the limit, which
+		// is reachable only by hand-editing a note's frontmatter.
+		if (active.length > settings.activeLimit) {
+			tray.createSpan({
+				cls: "chicago-wip-badge",
+				text: `${active.length} / ${settings.activeLimit}`,
+			});
+		}
+
+		if (active.length === 0) {
+			tray.createDiv({ cls: "chicago-empty-state", text: "Nothing active" });
+		} else {
+			const grid = tray.createDiv({ cls: "chicago-active-grid" });
+			for (const project of active) {
+				grid.appendChild(this.renderActiveCard(project, settings));
+			}
+		}
+
+		this.registerDropZone(tray, (path) => void this.activate(path));
+		return tray;
+	}
+
+	// SPEC §5.7 had this panel disappear when the inbox was empty. It now
+	// shares a row with Suspended, and vanishing would leave that row
+	// lopsided, so it holds its place and says it is clear instead.
+	private renderInboxSection(lines: InboxLine[]): HTMLElement {
+		const section = createDiv({ cls: "chicago-section" });
+		section.createDiv({ cls: "chicago-section-title", text: "Ideas inbox" });
+
+		if (lines.length === 0) {
+			section.createDiv({ cls: "chicago-empty-state", text: "Inbox is clear" });
+			return section;
+		}
+
+		const list = section.createDiv({ cls: "chicago-card-list" });
 		for (const line of lines) {
 			list.appendChild(this.renderInboxRow(line));
 		}
-		return details;
+		return section;
 	}
 
 	private renderInboxRow(line: InboxLine): HTMLElement {
-		const row = createDiv({ cls: "chicago-inbox-row" });
+		const row = createDiv({ cls: "chicago-card chicago-inbox-row" });
 		row.createSpan({ cls: "chicago-inbox-text", text: line.text });
 
-		const actions = row.createDiv({ cls: "chicago-inbox-actions" });
-		const promoteBtn = actions.createEl("button", { cls: "chicago-action-button", text: "Promote" });
-		promoteBtn.addEventListener("click", () => void this.promoteInboxLine(line));
-		const discardBtn = actions.createEl("button", { cls: "chicago-action-button", text: "Discard" });
-		discardBtn.addEventListener("click", () => void this.discardInboxLine(line));
-
+		const controls = row.createDiv({ cls: "chicago-card-controls" });
+		this.attachMenu(controls, row, (evt) => this.openInboxMenu(evt, line));
 		return row;
+	}
+
+	private openInboxMenu(evt: MouseEvent, line: InboxLine): void {
+		const menu = new Menu();
+		menu.addItem((item) => item.setTitle("Promote").setIcon("arrow-up").onClick(() => void this.promoteInboxLine(line)));
+		menu.addItem((item) => item.setTitle("Discard").setIcon("trash").onClick(() => void this.discardInboxLine(line)));
+		menu.showAtMouseEvent(evt);
 	}
 
 	private async promoteInboxLine(line: InboxLine): Promise<void> {
@@ -155,28 +191,25 @@ export class ChicagoBoardView extends ItemView {
 		if (!removed) new Notice("That line is no longer in the inbox.", 4000);
 	}
 
-	private renderActiveColumn(active: Project[], settings: ChicagoSettings): HTMLElement {
-		const column = createDiv({ cls: "chicago-column chicago-column-active" });
-		const header = column.createDiv({ cls: "chicago-column-header" });
-		header.createSpan({ text: "Active", cls: "chicago-column-title" });
+	private renderSuspended(someday: Project[]): HTMLElement {
+		const section = createDiv({ cls: "chicago-section chicago-tray" });
+		section.createDiv({ cls: "chicago-section-title", text: "Suspended" });
 
-		const overLimit = active.length > settings.activeLimit;
-		header.createSpan({
-			text: `${active.length}/${settings.activeLimit}`,
-			cls: overLimit ? "chicago-column-count chicago-over-limit" : "chicago-column-count",
-		});
-
-		if (active.length === 0) {
-			column.createDiv({ cls: "chicago-empty-state", text: "No active projects." });
-			return column;
+		if (someday.length === 0) {
+			section.createDiv({ cls: "chicago-empty-state", text: "Nothing suspended" });
+		} else {
+			for (const [category, projects] of groupByCategory(someday)) {
+				const group = section.createDiv({ cls: "chicago-category-group" });
+				group.createDiv({ cls: "chicago-category-header", text: category });
+				const list = group.createDiv({ cls: "chicago-card-list" });
+				for (const project of projects) {
+					list.appendChild(this.renderSomedayCard(project));
+				}
+			}
 		}
 
-		const list = column.createDiv({ cls: "chicago-card-list" });
-		for (const project of active) {
-			list.appendChild(this.renderActiveCard(project, settings));
-		}
-		this.registerDropZone(column, (path) => void this.activate(path));
-		return column;
+		this.registerDropZone(section, (path) => void this.park(path));
+		return section;
 	}
 
 	private renderActiveCard(project: Project, settings: ChicagoSettings): HTMLElement {
@@ -187,31 +220,30 @@ export class ChicagoBoardView extends ItemView {
 		if (staleness !== "normal") card.addClass(`chicago-stale-${staleness}`);
 
 		const head = card.createDiv({ cls: "chicago-card-head" });
-		const nameEl = head.createEl("a", { cls: "chicago-card-name", text: project.name, href: "#" });
-		nameEl.addEventListener("click", (evt) => {
-			evt.preventDefault();
-			void this.app.workspace.getLeaf(false).openFile(project.file);
-		});
+		this.renderCardName(head, project);
 
 		const controls = head.createDiv({ cls: "chicago-card-controls" });
-		const parkBtn = controls.createEl("button", { cls: "chicago-action-button", text: "Park" });
-		parkBtn.addEventListener("click", () => void this.park(project.path));
-		this.attachCardMenu(controls, card, project);
+		// Staleness is carried by colour alone, so the dot needs a label for
+		// anyone not reading it visually.
+		const dot = controls.createSpan({ cls: "chicago-status-dot" });
+		dot.setAttr("role", "img");
+		dot.setAttr("aria-label", stalenessLabel(staleness, project.touched));
+		this.attachMenu(controls, card, (evt) => this.openCardMenu(evt, project));
 
 		this.attachDrag(card, project.path);
 
-		const meta = card.createDiv({ cls: "chicago-card-meta" });
-		meta.createSpan({ text: `${formatHours(project.hours)}h` });
-		meta.createSpan({ text: " · " });
-		meta.createSpan({ text: formatRelative(project.touched) });
-		if (staleness !== "normal") {
-			meta.createSpan({ cls: "chicago-staleness-icon", text: " ⚠" });
-		}
+		card.createDiv({
+			cls: "chicago-card-meta",
+			text: `${formatHours(project.hours)} ${project.hours === 1 ? "hour" : "hours"} • ${formatRelative(project.touched)}`,
+		});
 
-		const next = card.createDiv({ cls: "chicago-card-next" });
+		// Pinned to the bottom edge so the next action and the hour buttons
+		// line up across every card in the grid regardless of title length.
+		const foot = card.createDiv({ cls: "chicago-card-foot" });
+		const next = foot.createDiv({ cls: "chicago-card-next" });
 		this.renderNextDisplay(next, project);
 
-		const buttons = card.createDiv({ cls: "chicago-hour-buttons" });
+		const buttons = foot.createDiv({ cls: "chicago-hour-buttons" });
 		for (const increment of settings.hourIncrements) {
 			const button = buttons.createEl("button", {
 				cls: "chicago-hour-button",
@@ -222,6 +254,32 @@ export class ChicagoBoardView extends ItemView {
 
 		this.cardMeta.set(project.path, { el: card, status: project.status, category: project.category, name: project.name });
 		return card;
+	}
+
+	private renderSomedayCard(project: Project): HTMLElement {
+		const card = createDiv({ cls: "chicago-card chicago-card-someday" });
+		card.setAttr("draggable", "true");
+
+		const head = card.createDiv({ cls: "chicago-card-head" });
+		this.renderCardName(head, project);
+
+		const controls = head.createDiv({ cls: "chicago-card-controls" });
+		this.attachMenu(controls, card, (evt) => this.openCardMenu(evt, project));
+
+		this.attachDrag(card, project.path);
+
+		this.cardMeta.set(project.path, { el: card, status: project.status, category: project.category, name: project.name });
+		return card;
+	}
+
+	// Titles clip to a single line, so the full name goes on the tooltip.
+	private renderCardName(head: HTMLElement, project: Project): void {
+		const nameEl = head.createEl("a", { cls: "chicago-card-name", text: project.name, href: "#" });
+		nameEl.setAttr("title", project.name);
+		nameEl.addEventListener("click", (evt) => {
+			evt.preventDefault();
+			void this.app.workspace.getLeaf(false).openFile(project.file);
+		});
 	}
 
 	private async logHours(path: string, delta: number): Promise<void> {
@@ -247,10 +305,11 @@ export class ChicagoBoardView extends ItemView {
 		container.empty();
 		const trigger = container.createEl("span", {
 			cls: project.next ? "chicago-next-text" : "chicago-next-placeholder",
-			text: project.next ? `▸ next: ${project.next}` : "▸ next: (set one)",
+			text: project.next ? `▶ next: ${project.next}` : "▶ next: (set one)",
 		});
 		trigger.tabIndex = 0;
 		trigger.setAttr("role", "button");
+		if (project.next) trigger.setAttr("title", project.next);
 		trigger.addEventListener("click", () => this.renderNextEditor(container, project));
 		trigger.addEventListener("keydown", (evt) => {
 			if (evt.key === "Enter" || evt.key === " ") {
@@ -300,53 +359,6 @@ export class ChicagoBoardView extends ItemView {
 		input.addEventListener("blur", () => void commit());
 	}
 
-	private renderSomedayColumn(someday: Project[]): HTMLElement {
-		const column = createDiv({ cls: "chicago-column chicago-column-someday" });
-		const header = column.createDiv({ cls: "chicago-column-header" });
-		header.createSpan({ text: "Someday", cls: "chicago-column-title" });
-		header.createSpan({ text: `${someday.length}`, cls: "chicago-column-count" });
-
-		if (someday.length === 0) {
-			column.createDiv({ cls: "chicago-empty-state", text: "No someday projects." });
-			this.registerDropZone(column, (path) => void this.park(path));
-			return column;
-		}
-
-		for (const [category, projects] of groupByCategory(someday)) {
-			const group = column.createDiv({ cls: "chicago-category-group" });
-			group.createDiv({ cls: "chicago-category-header", text: category });
-			const list = group.createDiv({ cls: "chicago-card-list" });
-			for (const project of projects) {
-				list.appendChild(this.renderSomedayCard(project));
-			}
-		}
-
-		this.registerDropZone(column, (path) => void this.park(path));
-		return column;
-	}
-
-	private renderSomedayCard(project: Project): HTMLElement {
-		const card = createDiv({ cls: "chicago-card chicago-card-someday" });
-		card.setAttr("draggable", "true");
-
-		const head = card.createDiv({ cls: "chicago-card-head" });
-		const nameEl = head.createEl("a", { cls: "chicago-card-name", text: project.name, href: "#" });
-		nameEl.addEventListener("click", (evt) => {
-			evt.preventDefault();
-			void this.app.workspace.getLeaf(false).openFile(project.file);
-		});
-
-		const controls = head.createDiv({ cls: "chicago-card-controls" });
-		const activateBtn = controls.createEl("button", { cls: "chicago-action-button", text: "Activate" });
-		activateBtn.addEventListener("click", () => void this.activate(project.path));
-		this.attachCardMenu(controls, card, project);
-
-		this.attachDrag(card, project.path);
-
-		this.cardMeta.set(project.path, { el: card, status: project.status, category: project.category, name: project.name });
-		return card;
-	}
-
 	private async activate(path: string): Promise<void> {
 		const settings = this.getSettings();
 		const result = await this.store.activate(path, settings.activeLimit);
@@ -375,16 +387,21 @@ export class ChicagoBoardView extends ItemView {
 		await this.store.deleteProject(project.path);
 	}
 
-	private attachCardMenu(controls: HTMLElement, card: HTMLElement, project: Project): void {
-		const menuBtn = controls.createEl("button", { cls: "chicago-menu-button", text: "⋮" });
-		menuBtn.setAttr("aria-label", "More actions");
-		menuBtn.addEventListener("click", (evt) => {
+	// One "⋮" button, plus right-click anywhere on the row, both opening the
+	// same menu. Every verb the board offers lives in there now — Park,
+	// Activate, Delete, Promote, Discard — so a card's surface carries
+	// nothing but its hour buttons.
+	private attachMenu(controls: HTMLElement, row: HTMLElement, open: (evt: MouseEvent) => void): void {
+		const button = controls.createEl("button", { cls: "chicago-menu-button" });
+		button.setAttr("aria-label", "More actions");
+		setIcon(button, "more-vertical");
+		button.addEventListener("click", (evt) => {
 			evt.stopPropagation();
-			this.openCardMenu(evt, project);
+			open(evt);
 		});
-		card.addEventListener("contextmenu", (evt) => {
+		row.addEventListener("contextmenu", (evt) => {
 			evt.preventDefault();
-			this.openCardMenu(evt, project);
+			open(evt);
 		});
 	}
 
@@ -406,8 +423,8 @@ export class ChicagoBoardView extends ItemView {
 	}
 
 	// Drag is an enhancement only — every action it performs (activate/park)
-	// is already reachable via the visible buttons and the "⋮" menu above, so
-	// nothing here is the only path to a feature (see SPEC §3, §5.5).
+	// is already reachable via the "⋮" menu above, so nothing here is the
+	// only path to a feature (see SPEC §3, §5.5).
 	private attachDrag(card: HTMLElement, path: string): void {
 		card.addEventListener("dragstart", (evt) => {
 			evt.dataTransfer?.setData(DRAG_MIME, path);
@@ -417,22 +434,22 @@ export class ChicagoBoardView extends ItemView {
 		card.addEventListener("dragend", () => card.removeClass("chicago-dragging"));
 	}
 
-	private registerDropZone(column: HTMLElement, onDrop: (path: string) => void): void {
-		column.addEventListener("dragover", (evt) => {
+	private registerDropZone(zone: HTMLElement, onDrop: (path: string) => void): void {
+		zone.addEventListener("dragover", (evt) => {
 			if (!evt.dataTransfer?.types.includes(DRAG_MIME)) return;
 			evt.preventDefault();
 			evt.dataTransfer.dropEffect = "move";
-			column.addClass("chicago-drop-target");
+			zone.addClass("chicago-drop-target");
 		});
-		column.addEventListener("dragleave", (evt) => {
+		zone.addEventListener("dragleave", (evt) => {
 			const related = evt.relatedTarget as Node | null;
-			if (!related || !column.contains(related)) {
-				column.removeClass("chicago-drop-target");
+			if (!related || !zone.contains(related)) {
+				zone.removeClass("chicago-drop-target");
 			}
 		});
-		column.addEventListener("drop", (evt) => {
+		zone.addEventListener("drop", (evt) => {
 			const path = evt.dataTransfer?.getData(DRAG_MIME);
-			column.removeClass("chicago-drop-target");
+			zone.removeClass("chicago-drop-target");
 			if (!path) return;
 			evt.preventDefault();
 			onDrop(path);
@@ -464,6 +481,15 @@ function groupByCategory(projects: Project[]): Array<[string, Project[]]> {
 	if (groups.has(UNCATEGORISED)) categories.push(UNCATEGORISED);
 
 	return categories.map((c) => [c, groups.get(c) as Project[]]);
+}
+
+// "normal" is only reachable with a valid `touched` date — computeStaleness
+// treats a missing one as stale — so the relative time always reads sensibly.
+function stalenessLabel(staleness: Staleness, touched: string | null): string {
+	const when = formatRelative(touched);
+	if (staleness === "stale") return `Stale — ${when}`;
+	if (staleness === "warning") return `Going stale — ${when}`;
+	return `Worked on ${when}`;
 }
 
 function formatHours(hours: number): string {
