@@ -1,7 +1,7 @@
 {
 	"id": "chicago",
 	"name": "Chicago",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.7.2",
 	"description": "An opinionated project dashboard with a hard-enforced WIP limit, one-click hour logging, and inbox triage, for turning scattered ideas into finished projects.",
 	"author": "desynkd",

@@ -1,6 +1,6 @@
 {
 	"name": "chicago",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "An opinionated project dashboard with a hard-enforced WIP limit, one-click hour logging, and inbox triage.",
 	"main": "main.js",
 	"scripts": {
