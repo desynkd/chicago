@@ -1,19 +1,16 @@
 # Chicago
 
-An Obsidian dashboard for people with more project ideas than evenings.
+An opinionated Obsidian dashboard for people with project ideas but who
+struggle with procrastination.
 
-Chicago is not a kanban board. It is one board with a **hard cap on how many
-projects can be active at once**, and it will not let you past that cap.
+Chicago is one board with a **hard cap on how many projects can be active at
+once**, and it will not let you past that cap.
 
 ![The Chicago dashboard](docs/screenshots/board.png)
 
 ## Why a limit you can't override
 
-Most project plugins are good at holding ideas and bad at the thing that
-actually stops people finishing: having twelve open projects, remembering none
-of them clearly, and picking none of them.
-
-Chicago is built around three claims:
+Chicago is built around three decisions:
 
 **Ideas rot where you can't see them.** So the suspended list sits on the same
 screen as your active work, always, with no click to reveal it.
@@ -25,7 +22,7 @@ is no "allow anyway", because an override you can reach in one click is the same
 as no limit at all.
 
 **Bouncing off a project is a memory problem.** So every active project carries
-a one-line **next action** — the smallest concrete thing you'd do next. If it's
+a one-line **next action**: the smallest concrete thing you'd do next. If it's
 empty the card says so, visibly, because an active project without one is the
 one you're about to abandon.
 
@@ -37,13 +34,13 @@ enough to kill the habit.
 ## What it does
 
 - **Active tray** at the top of the board, capped at your WIP limit
-- **One-click hour logging** — preset buttons, no dialog, no note prompt, with an
+- **One-click hour logging**: preset buttons, no dialog, no note prompt, with an
   undo on the notice for the inevitable misclick
 - **Next action** per active project, edited inline on the card
 - **Staleness dot** that turns amber then red as a project goes untouched, so
   "should I park this?" answers itself
 - **Ideas inbox** that turns one-line jots in a note into projects
-- **Suspended list**, grouped by category, keeping full history — parking and
+- **Suspended list**, grouped by category, keeping full history; parking and
   re-activating preserves hours, next action, and last-touched exactly
 
 ![Activating past the limit](docs/screenshots/wip-limit.png)
@@ -51,7 +48,7 @@ enough to kill the habit.
 ## Your notes are the data
 
 One Markdown note per project in `Projects/`. There is no database and no
-plugin-owned index of your projects — the notes *are* the state, so you can
+plugin-owned index of your projects; the notes *are* the state, so you can
 read, edit and grep them, and they keep working if this plugin ever stops being
 maintained.
 
@@ -67,7 +64,7 @@ created: 2024-07-29    # date the idea was captured
 ```
 
 Chicago only ever writes frontmatter, through Obsidian's own
-`processFrontMatter` — **your note body is never rewritten, reformatted or
+`processFrontMatter`, and **your note body is never rewritten, reformatted or
 truncated**. Uninstall it and you're left with a folder of plain Markdown.
 
 A note with no frontmatter at all still shows up, as suspended. Missing or
@@ -80,19 +77,19 @@ broken values fall back rather than erroring: no `hours` reads as 0, no
 ## Using it
 
 Open the board from the ribbon icon or the **Chicago: Open dashboard** command.
-No hotkey is registered — bind your own if you want one.
+No hotkey is registered; bind your own if you want one.
 
 Every action lives in the **⋮** menu on each row: Park, Activate, Delete on
 projects; Promote and Discard on inbox lines. Dragging a card between the tray
 and the suspended list does the same thing, but drag is only ever an
-enhancement — nothing here is reachable *only* by dragging.
+enhancement; nothing here is reachable *only* by dragging.
 
 **Logging work.** Click `+0.5`, `+1` or `+2` on an active card. It adds to
 `hours`, stamps `touched` with today's date, and re-renders that one card. The
 increments are configurable.
 
 **Setting a next action.** Click the next line on any active card and type. Enter
-or clicking away commits, Escape cancels. One line only — anything longer
+or clicking away commits, Escape cancels. One line only; anything longer
 belongs in the note body.
 
 **Triaging the inbox.** Paste one-line ideas into `Inbox.md` as `- like this`
@@ -114,7 +111,7 @@ immediately before every write, so edits you made in another pane survive.
 | Staleness stale threshold (days) | `21` |
 | Open dashboard on startup | `false` |
 
-A hand-edited or corrupted `data.json` won't crash the plugin — each field falls
+A hand-edited or corrupted `data.json` won't crash the plugin; each field falls
 back to its default on its own.
 
 ## Installing
@@ -128,7 +125,7 @@ Chicago is not in the community plugin directory yet. To install it by hand:
 
 ## Building from source
 
-Node 20 or newer. No runtime dependencies — everything it needs is the Obsidian
+Node 20 or newer. No runtime dependencies: everything it needs is the Obsidian
 API and the DOM.
 
 ```bash
@@ -158,7 +155,7 @@ git push --follow-tags
 
 Pushing the tag runs [the release workflow](.github/workflows/release.yml),
 which checks the tag against the manifest, builds, and publishes `main.js`,
-`manifest.json` and `styles.css` as individual release assets — Obsidian's
+`manifest.json` and `styles.css` as individual release assets; Obsidian's
 tooling reads them individually and will not open a zip.
 
 ## Theming
@@ -168,7 +165,7 @@ board wears whatever theme your vault does.
 
 Surfaces are the one exception, and for a reason: `--background-secondary` sits
 *below* `--background-primary` on dark themes, *above* it on light ones, and
-some themes make the two identical — which flattened the whole board into a
+some themes make the two identical, which flattened the whole board into a
 single sheet. The board's three levels are instead mixed from `--text-normal`
 into `--background-primary`, which always moves toward contrast whichever
 direction that is. Each mix declares a plain-variable fallback for engines
