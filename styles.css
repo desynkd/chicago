@@ -109,6 +109,14 @@
 	padding-bottom: var(--size-4-3);
 }
 
+/* Inbox isn't a tray (no enclosure), so its rows would otherwise sit
+   flush against the column edge. A little breathing room on the sides
+   only — vertical spacing already comes from .chicago-board's gap. */
+.chicago-section:not(.chicago-tray) {
+	padding-left: var(--size-4-2);
+	padding-right: var(--size-4-2);
+}
+
 /* --- cards, shared ------------------------------------------------ */
 .chicago-card {
 	background: var(--chicago-surface);

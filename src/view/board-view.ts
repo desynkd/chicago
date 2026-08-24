@@ -5,6 +5,7 @@ import { ChicagoSettings } from "../settings";
 import { Project, ProjectStatus } from "../models/project";
 import { computeStaleness, formatRelative, Staleness } from "../util/dates";
 import { ConfirmModal } from "./confirm-modal";
+import { CHICAGO_ICON_ID } from "../icon";
 
 // Custom drag data type carrying a project's vault path between cards and
 // columns — kept off "text/plain" so the drag doesn't act on the name text.
@@ -45,7 +46,7 @@ export class ChicagoBoardView extends ItemView {
 	}
 
 	getIcon(): string {
-		return "layout-dashboard";
+		return CHICAGO_ICON_ID;
 	}
 
 	async onOpen(): Promise<void> {

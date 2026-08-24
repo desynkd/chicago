@@ -1,9 +1,10 @@
-import { Plugin } from "obsidian";
+import { addIcon, Plugin } from "obsidian";
 import { ChicagoSettings, DEFAULT_SETTINGS, normalizeSettings } from "./src/settings";
 import { ChicagoSettingTab } from "./src/settings-tab";
 import { ProjectStore } from "./src/data/project-store";
 import { InboxStore } from "./src/data/inbox-store";
 import { ChicagoBoardView, VIEW_TYPE_CHICAGO_BOARD } from "./src/view/board-view";
+import { CHICAGO_ICON_ID, CHICAGO_ICON_SVG } from "./src/icon";
 
 export default class ChicagoPlugin extends Plugin {
 	settings: ChicagoSettings = DEFAULT_SETTINGS;
@@ -12,6 +13,7 @@ export default class ChicagoPlugin extends Plugin {
 
 	async onload() {
 		console.log("Chicago: loading plugin");
+		addIcon(CHICAGO_ICON_ID, CHICAGO_ICON_SVG);
 		this.settings = normalizeSettings(await this.loadData());
 
 		this.projectStore = new ProjectStore(this.app, () => this.settings.projectsFolder);
