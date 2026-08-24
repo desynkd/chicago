@@ -212,15 +212,27 @@
 /* Mixed down toward the card surface rather than dropped in opacity:
    the dot stays fully opaque, so it composites the same whatever sits
    behind the card. Loud enough to read while you are looking at a card,
-   quiet enough not to pull the eye across the board. */
+   quiet enough not to pull the eye across the board.
+
+   The plain hue is the base; the mix is applied in @supports rather than
+   as a second declaration in the same block, so the fallback reads as a
+   fallback instead of as a duplicated property. */
 .chicago-stale-warning .chicago-status-dot {
 	background: var(--color-yellow, var(--color-orange));
-	background: color-mix(in srgb, var(--color-yellow, var(--color-orange)) 55%, var(--chicago-surface));
 }
 
 .chicago-stale-stale .chicago-status-dot {
 	background: var(--color-red);
-	background: color-mix(in srgb, var(--color-red) 55%, var(--chicago-surface));
+}
+
+@supports (background: color-mix(in srgb, red 50%, blue)) {
+	.chicago-stale-warning .chicago-status-dot {
+		background: color-mix(in srgb, var(--color-yellow, var(--color-orange)) 55%, var(--chicago-surface));
+	}
+
+	.chicago-stale-stale .chicago-status-dot {
+		background: color-mix(in srgb, var(--color-red) 55%, var(--chicago-surface));
+	}
 }
 
 .chicago-card-meta {
