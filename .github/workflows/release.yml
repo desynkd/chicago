@@ -12,6 +12,10 @@ on:
 
 permissions:
   contents: write
+  # Provenance attestation signs the built assets with a workflow identity,
+  # so a user can verify the files they downloaded came out of this repo.
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -39,6 +43,14 @@ jobs:
           node -p "require('./versions.json')['$tag'] || (console.error('versions.json has no entry for $tag'), process.exit(1))"
 
       - run: npm run build
+
+      - name: Attest the build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
 
       - name: Create the release
         env:
