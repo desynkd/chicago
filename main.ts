@@ -12,7 +12,6 @@ export default class ChicagoPlugin extends Plugin {
 	inboxStore!: InboxStore;
 
 	async onload() {
-		console.log("Chicago: loading plugin");
 		addIcon(CHICAGO_ICON_ID, CHICAGO_ICON_SVG);
 		this.settings = normalizeSettings(await this.loadData());
 
@@ -48,18 +47,11 @@ export default class ChicagoPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(async () => {
 			await this.projectStore.scan();
 			await this.inboxStore.scan();
-			const active = this.projectStore.getActive().length;
-			const someday = this.projectStore.getSomeday().length;
-			console.log(`Chicago: indexed ${active + someday} projects (${active} active, ${someday} someday)`);
 
 			if (this.settings.openOnStartup) {
 				await this.activateView();
 			}
 		});
-	}
-
-	onunload() {
-		console.log("Chicago: unloading plugin");
 	}
 
 	// Reuses an existing dashboard leaf rather than opening duplicates, and
