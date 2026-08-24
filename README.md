@@ -180,3 +180,5 @@ correctly when it's sharing the screen with a note.
 ## License
 
 [MIT](LICENSE)
+
+<sub>Chicago sounds like a random name, and it is, I guess. I named it after "Chicago" by Michael Jackson, which was playing on the background while I was trying to come up with one.</sub>

@@ -33,8 +33,9 @@
 	--chicago-control-hover: color-mix(in srgb, var(--text-normal) 17%, var(--background-primary));
 
 	/* Past the top of Obsidian's radius scale, so it is ours rather than
-	   the vault's. Cards and controls stay on the vault's own tokens. */
+	   the vault's. Controls stay on the vault's own tokens. */
 	--chicago-radius-tray: 32px;
+	--chicago-tray-pad: var(--size-4-4);
 }
 
 /* One step up the Obsidian radius scale from where this started:
@@ -46,7 +47,7 @@
 	background: var(--chicago-tray);
 	border: 1px solid var(--chicago-hairline);
 	border-radius: var(--chicago-radius-tray);
-	padding: var(--size-4-4);
+	padding: var(--chicago-tray-pad);
 }
 
 /* --- active ------------------------------------------------------- */
@@ -173,11 +174,15 @@
 .chicago-menu-button svg { width: 18px; height: 18px; }
 
 /* --- active card -------------------------------------------------- */
+/* Concentric with the tray: an inner corner reads as parallel to the one
+   outside it only when it is the outer radius minus the gap between them.
+   Left at --radius-l, the card corner fights the tray's much rounder one. */
 .chicago-card-active {
 	display: flex;
 	flex-direction: column;
 	min-height: 184px;
 	padding: var(--size-4-4);
+	border-radius: calc(var(--chicago-radius-tray) - var(--chicago-tray-pad));
 }
 
 .chicago-card-active .chicago-card-name {
