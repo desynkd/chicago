@@ -70,13 +70,13 @@ export default class ChicagoPlugin extends Plugin {
 		const existing = workspace.getLeavesOfType(VIEW_TYPE_CHICAGO_BOARD);
 
 		if (existing.length > 0) {
-			workspace.revealLeaf(existing[0]);
+			await workspace.revealLeaf(existing[0]);
 			return;
 		}
 
 		const leaf = workspace.getLeaf("tab");
 		await leaf.setViewState({ type: VIEW_TYPE_CHICAGO_BOARD, active: true });
-		workspace.revealLeaf(leaf);
+		await workspace.revealLeaf(leaf);
 	}
 
 	// Settings that affect rendering (WIP limit, hour increments, staleness
