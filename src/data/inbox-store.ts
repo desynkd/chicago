@@ -9,10 +9,21 @@ export interface InboxLine {
 
 export type PromoteResult = { ok: true } | { ok: false; reason: "line-not-found" };
 
+export type CaptureResult =
+	| { ok: true; added: number }
+	| { ok: false; reason: "empty" }
+	| { ok: false; reason: "not-a-note"; path: string };
+
 const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|]/g;
 const MAX_FILENAME_LENGTH = 100;
 const CHECKED_TASK = /^-\s*\[[xX]\]/;
 const LIST_ITEM = /^-\s*(?:\[ \]\s*)?(.*)$/;
+// Leading list or task markers the user may have typed or pasted along with
+// the idea itself. The marker must be followed by whitespace, so "-5 degrees"
+// keeps its hyphen. A checked box is stripped along with an unchecked one:
+// the alternative is writing "- [x] foo" to the file, which parseInboxLines
+// skips, and an idea you captured must never fail to appear in the panel.
+const PASTED_MARKER = /^\s*(?:[-*+][ \t]+)?(?:\[[ xX]?\][ \t]*)?/;
 
 // A line counts as an inbox idea when it's a plain "- foo" bullet with
 // non-empty content. A checked task ("- [x] foo") is treated as already
@@ -29,6 +40,18 @@ export function parseInboxLines(content: string): InboxLine[] {
 		lines.push({ raw, text });
 	}
 	return lines;
+}
+
+// Splits what the user typed into one idea per non-empty line, so a single
+// submit can carry a batch — the same shape the monthly paste from a phone
+// arrives in.
+export function parseIdeaInput(input: string): string[] {
+	const ideas: string[] = [];
+	for (const raw of input.split(/\r?\n/)) {
+		const text = raw.replace(PASTED_MARKER, "").trim();
+		if (text) ideas.push(text);
+	}
+	return ideas;
 }
 
 export function sanitiseFilename(text: string): string {
@@ -97,6 +120,47 @@ export class InboxStore {
 		const removed = await this.removeLine(line);
 		await this.scan();
 		return removed ? { ok: true } : { ok: false, reason: "line-not-found" };
+	}
+
+	// Appends one bullet per idea. Like removeLine, this re-reads the file
+	// immediately before writing rather than trusting the cached parse, so a
+	// capture never clobbers an edit made since the panel last rendered.
+	async capture(input: string): Promise<CaptureResult> {
+		const ideas = parseIdeaInput(input);
+		if (ideas.length === 0) return { ok: false, reason: "empty" };
+
+		const path = this.getInboxPath();
+		const existing = this.app.vault.getAbstractFileByPath(path);
+		if (existing && !(existing instanceof TFile)) return { ok: false, reason: "not-a-note", path };
+
+		const file = existing instanceof TFile ? existing : await this.createInboxNote(path);
+		const content = await this.app.vault.read(file);
+		const eol = content.includes("\r\n") ? "\r\n" : "\n";
+		const lines = content.split(/\r?\n/);
+
+		// Inserted after the last non-empty line rather than at the very end,
+		// so the new bullets join the list instead of being pushed below any
+		// trailing blank lines the file happens to carry.
+		let insertAt = lines.length;
+		while (insertAt > 0 && lines[insertAt - 1].trim() === "") insertAt--;
+		lines.splice(insertAt, 0, ...ideas.map((idea) => `- ${idea}`));
+
+		await this.app.vault.modify(file, lines.join(eol));
+		await this.scan();
+		return { ok: true, added: ideas.length };
+	}
+
+	// The inbox note is allowed not to exist yet — a vault that has never been
+	// triaged is the normal starting state, and refusing to capture until the
+	// user hand-creates the file would be friction for nothing. The path is
+	// used exactly as configured, extension included, so what gets created is
+	// the same path readLines looks for.
+	private async createInboxNote(path: string): Promise<TFile> {
+		const folder = path.slice(0, path.lastIndexOf("/"));
+		if (folder && !this.app.vault.getAbstractFileByPath(folder)) {
+			await this.app.vault.createFolder(folder);
+		}
+		return this.app.vault.create(path, "");
 	}
 
 	async discard(line: InboxLine): Promise<boolean> {

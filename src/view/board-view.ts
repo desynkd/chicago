@@ -5,6 +5,7 @@ import { ChicagoSettings } from "../settings";
 import { Project, ProjectStatus } from "../models/project";
 import { computeStaleness, formatRelative, Staleness } from "../util/dates";
 import { ConfirmModal } from "./confirm-modal";
+import { captureIdea } from "./idea-modal";
 import { CHICAGO_ICON_ID } from "../icon";
 
 // Custom drag data type carrying a project's vault path between cards and
@@ -149,8 +150,16 @@ export class ChicagoBoardView extends ItemView {
 	// a row with Suspended, and vanishing would leave that row lopsided, so
 	// it holds its place and says it is clear instead.
 	private renderInboxSection(lines: InboxLine[]): HTMLElement {
-		const section = createDiv({ cls: "chicago-section" });
-		section.createDiv({ cls: "chicago-section-title", text: "Ideas inbox" });
+		const section = createDiv({ cls: "chicago-section chicago-tray" });
+
+		// Capture sits on the panel the idea lands in rather than in board-level
+		// chrome, so the button and its result are the same object.
+		const head = section.createDiv({ cls: "chicago-section-head" });
+		head.createDiv({ cls: "chicago-section-title", text: "Ideas inbox" });
+		const add = head.createEl("button", { cls: "chicago-add-button" });
+		setIcon(add, "plus");
+		add.createSpan({ text: "Add new" });
+		add.addEventListener("click", () => void captureIdea(this.app, this.inbox));
 
 		if (lines.length === 0) {
 			section.createDiv({ cls: "chicago-empty-state", text: "Inbox is clear" });
@@ -490,8 +499,8 @@ function groupByCategory(projects: Project[]): Array<[string, Project[]]> {
 // treats a missing one as stale — so the relative time always reads sensibly.
 function stalenessLabel(staleness: Staleness, touched: string | null): string {
 	const when = formatRelative(touched);
-	if (staleness === "stale") return `Stale — ${when}`;
-	if (staleness === "warning") return `Going stale — ${when}`;
+	if (staleness === "stale") return `Stale, ${when}`;
+	if (staleness === "warning") return `Going stale, ${when}`;
 	return `Worked on ${when}`;
 }
 

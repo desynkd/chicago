@@ -39,7 +39,9 @@ enough to kill the habit.
 - **Next action** per active project, edited inline on the card
 - **Staleness dot** that turns amber then red as a project goes untouched, so
   "should I park this?" answers itself
-- **Ideas inbox** that turns one-line jots in a note into projects
+- **Ideas inbox** that turns one-line jots in a note into projects, with an
+  **Add new** button on the panel to jot one straight from the board, or several
+  at once if you write several lines
 - **Suspended list**, grouped by category, keeping full history; parking and
   re-activating preserves hours, next action, and last-touched exactly
 
@@ -77,7 +79,9 @@ broken values fall back rather than erroring: no `hours` reads as 0, no
 ## Using it
 
 Open the board from the ribbon icon or the **Chicago: Open dashboard** command.
-No hotkey is registered; bind your own if you want one.
+**Chicago: Capture idea** opens the same capture dialog as the panel's **Add
+new** button, from wherever you happen to be. No hotkeys are registered; bind your own if you
+want them.
 
 Every action lives in the **⋮** menu on each row: Park, Activate, Delete on
 projects; Promote and Discard on inbox lines. Dragging a card between the tray

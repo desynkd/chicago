@@ -5,6 +5,7 @@ import { ProjectStore } from "./src/data/project-store";
 import { InboxStore } from "./src/data/inbox-store";
 import { ChicagoBoardView, VIEW_TYPE_CHICAGO_BOARD } from "./src/view/board-view";
 import { CHICAGO_ICON_ID, CHICAGO_ICON_SVG } from "./src/icon";
+import { captureIdea } from "./src/view/idea-modal";
 
 export default class ChicagoPlugin extends Plugin {
 	settings: ChicagoSettings = DEFAULT_SETTINGS;
@@ -41,6 +42,17 @@ export default class ChicagoPlugin extends Plugin {
 			name: "Open dashboard",
 			callback: () => {
 				void this.activateView();
+			},
+		});
+
+		// Capture is deliberately not board-bound: the idea usually arrives
+		// while you are in some other note, and making you open the dashboard
+		// first is the friction that loses it.
+		this.addCommand({
+			id: "capture-idea",
+			name: "Capture idea",
+			callback: () => {
+				void captureIdea(this.app, this.inboxStore);
 			},
 		});
 

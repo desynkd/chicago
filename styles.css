@@ -27,15 +27,23 @@
 	--chicago-surface: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary));
 	--chicago-hairline: var(--background-modifier-border);
 	--chicago-hairline: color-mix(in srgb, var(--text-normal) 11%, transparent);
+
+	--chicago-tray-pad: var(--size-4-4);
+}
+
+/* Shared with the capture dialog, which renders in Obsidian's modal
+   container rather than inside .chicago-board, but has to look cut from
+   the same cloth: same tray corner, same control colours (the close
+   button's hover chip matches the board's own hover states), computed
+   the same theme-proof way. */
+.chicago-board,
+.chicago-idea-modal,
+.modal:has(.chicago-idea-input) {
+	--chicago-radius-tray: 32px;
 	--chicago-control: var(--interactive-normal);
 	--chicago-control: color-mix(in srgb, var(--text-normal) 10%, var(--background-primary));
 	--chicago-control-hover: var(--interactive-hover);
 	--chicago-control-hover: color-mix(in srgb, var(--text-normal) 17%, var(--background-primary));
-
-	/* Past the top of Obsidian's radius scale, so it is ours rather than
-	   the vault's. Controls stay on the vault's own tokens. */
-	--chicago-radius-tray: 32px;
-	--chicago-tray-pad: var(--size-4-4);
 }
 
 /* One step up the Obsidian radius scale from where this started:
@@ -104,17 +112,26 @@
 	margin-bottom: var(--size-4-3);
 }
 
-.chicago-tray > .chicago-section-title {
-	border-bottom: 1px solid var(--chicago-hairline);
-	padding-bottom: var(--size-4-3);
+/* A title with a control beside it. The row owns the spacing below, so
+   the title inside it gives its own margin up. */
+.chicago-section-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-3);
 }
 
-/* Inbox isn't a tray (no enclosure), so its rows would otherwise sit
-   flush against the column edge. A little breathing room on the sides
-   only — vertical spacing already comes from .chicago-board's gap. */
-.chicago-section:not(.chicago-tray) {
-	padding-left: var(--size-4-2);
-	padding-right: var(--size-4-2);
+.chicago-section-head > .chicago-section-title {
+	margin-bottom: 0;
+}
+
+/* Matched on the head row too: the inbox wraps its title alongside the
+   Add new button, so the title is no longer a direct child there. */
+.chicago-tray > .chicago-section-title,
+.chicago-tray > .chicago-section-head {
+	border-bottom: 1px solid var(--chicago-hairline);
+	padding-bottom: var(--size-4-3);
 }
 
 /* --- cards, shared ------------------------------------------------ */
@@ -375,6 +392,109 @@
 	opacity: 0.28;
 }
 
+/* The only control on the board that adds rather than acting on something
+   already there, and the only pill: the shape separates it from the square
+   menu buttons on the rows below. */
+.chicago-add-button {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	flex: 0 0 auto;
+	height: 28px;
+	padding: 0 var(--size-4-3);
+	background: var(--chicago-control);
+	color: var(--text-muted);
+	border: none;
+	border-radius: 999px;
+	cursor: pointer;
+	font-size: var(--font-ui-small);
+	line-height: 1;
+	white-space: nowrap;
+	transition: background 0.15s ease-out, color 0.15s ease-out;
+}
+
+.chicago-add-button:hover {
+	background: var(--chicago-control-hover);
+	color: var(--text-normal);
+}
+
+.chicago-add-button:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+.chicago-add-button svg { width: 16px; height: 16px; }
+
+/* --- capture dialog ------------------------------------------------- */
+/* Same corner as the active tray, so the dialog reads as a piece of the
+   board rather than a stock Obsidian panel.
+
+   Matched two ways on purpose. The class is added in onOpen, which is a
+   promise about DOM timing this file would rather not depend on; :has()
+   keys off the dialog's own text field instead, so the geometry lands
+   whether or not that class does. !important because Obsidian's own .modal
+   rule ties on specificity, and a tie is decided by load order rather than
+   by intent. */
+.chicago-idea-modal,
+.modal:has(.chicago-idea-input) {
+	border-radius: var(--chicago-radius-tray) !important;
+	padding: var(--size-4-8) var(--size-4-8) var(--size-4-6) !important;
+}
+
+/* Hidden rather than restyled: it is Obsidian's own button, the vault theme
+   claims it directly, and Cancel and Escape both already close the dialog.
+   Done in CSS rather than by removing the node in onOpen, which was tried
+   and lost the race — Obsidian creates the button after onOpen runs, while
+   a rule applies whenever the element appears.
+
+   Both halves of Obsidian's own group (app.css: `.modal-header-button,
+   .modal-close-button`), and matched from .modal-container rather than
+   .modal: that rule positions these absolutely at the modal layer, so the
+   button is not reliably a child of the dialog element itself. The
+   container is the one ancestor that certainly holds both it and the
+   dialog's field. */
+.modal-container:has(.chicago-idea-input) .modal-close-button,
+.modal-container:has(.chicago-idea-input) .modal-header-button {
+	display: none !important;
+}
+
+.chicago-idea-modal .modal-title,
+.modal:has(.chicago-idea-input) .modal-title {
+	margin-bottom: var(--size-4-3);
+}
+
+.chicago-idea-hint {
+	margin: 0 0 var(--size-4-6);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	line-height: var(--line-height-normal);
+}
+
+.chicago-idea-input {
+	width: 100%;
+	padding: var(--size-4-3) var(--size-4-4);
+	border-radius: var(--radius-l);
+	resize: vertical;
+	font-family: inherit;
+	font-size: var(--font-ui-medium);
+	line-height: var(--line-height-normal);
+}
+
+/* Pushed left of the buttons by their flex-end justification. */
+.chicago-idea-shortcut {
+	margin-right: auto;
+	align-self: center;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+/* Shared with the delete confirmation, the board's only other dialog. */
+.chicago-confirm-buttons button {
+	padding: var(--size-4-2) var(--size-4-6);
+	border-radius: 999px;
+	cursor: pointer;
+}
+
 /* --- drag ---------------------------------------------------------- */
 .chicago-drop-target {
 	outline: 2px dashed var(--interactive-accent);
@@ -386,7 +506,7 @@
 	display: flex;
 	justify-content: flex-end;
 	gap: var(--size-4-2);
-	margin-top: var(--size-4-4);
+	margin-top: var(--size-4-6);
 }
 
 /* --- responsive ----------------------------------------------------- */
